@@ -1,0 +1,3120 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="OPD Cal">
+<meta name="application-name" content="OPD Cal">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f2f0ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1112" media="(prefers-color-scheme: dark)">
+<!--PWA--><link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png"><!--/PWA-->
+<meta name="color-scheme" content="light dark">
+<title>OPD Follow-Up Calendar</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSIjMDA2OTVjIi8+CjxyZWN0IHg9IjEwIiB5PSI4IiB3aWR0aD0iNiIgaGVpZ2h0PSIxMCIgcng9IjMiIGZpbGw9IiNlMGYyZjEiLz4KPHJlY3QgeD0iNDgiIHk9IjgiIHdpZHRoPSI2IiBoZWlnaHQ9IjEwIiByeD0iMyIgZmlsbD0iI2UwZjJmMSIvPgo8cmVjdCB4PSIxMiIgeT0iMTYiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcng9IjYiIGZpbGw9IiNmZmZmZmYiLz4KPHJlY3QgeD0iMTIiIHk9IjE2IiB3aWR0aD0iNDAiIGhlaWdodD0iMTEiIHJ4PSI2IiBmaWxsPSIjMDA0NzNmIi8+CjxyZWN0IHg9IjEyIiB5PSIyMSIgd2lkdGg9IjQwIiBoZWlnaHQ9IjYiIGZpbGw9IiMwMDQ3M2YiLz4KPHBhdGggZD0iTTIxIDM5IEwyOCA0NiBMNDQgMzAiIHN0cm9rZT0iIzAwNjk1YyIgc3Ryb2tlLXdpZHRoPSI2IiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+">
+<style>
+/* ============================================================
+   CENSUS — monochrome until something needs attention.
+   Chroma is reserved for exceptions: overdue, half-day, post-op.
+   Load is encoded by filled gauge segments, never by hue.
+   ============================================================ */
+:root {
+  --paper:      #f2f0ec;   /* page ground, toned */
+  --field:      #fbfaf8;   /* month + panel fields */
+  --raised:     #ffffff;   /* clinic days, inputs */
+  --rule:       #e0ddd6;   /* hairlines */
+  --rule-hi:    #c7c2b8;   /* structural rules */
+  --edge:       #a8a294;   /* clinic-day edge */
+  --control:    #8b8780;   /* control borders — 3.6:1, WCAG 1.4.11 */
+
+  --ink:        #14161a;
+  --ink-2:      #55595c;
+  --ink-3:      #6a6e70;
+
+  /* the only chroma on the page */
+  --alert:      #9b2c1f;   --alert-bg:   #f7e9e6;
+  --caution:    #7d5200;   --caution-bg: #f9efdb;
+  --flag:       #56308f;   --flag-bg:    #ece5f7;
+  /* leave and holidays: the two kinds of "no clinic today" */
+  --leave:      #1f5691;   --leave-bg:   #e7eef8;   --leave-edge: #9db9dc;
+  --holiday:    #1a6b4d;   --holiday-bg: #e2f0e9;   --holiday-edge: #96c4ae;
+  --duty:       #0f6b6e;   --duty-bg:    #dcf0ee;   --duty-edge:   #8ec7c4;
+
+  --gauge-on:   #2b2d31;
+  --gauge-off:  #cfcabf;
+
+  --s1: 4px;  --s2: 6px;  --s3: 8px;  --s4: 12px;
+  --s5: 16px; --s6: 20px; --s7: 28px; --s8: 40px;
+  --r: 3px;   --r-lg: 4px;  --r-full: 999px;
+
+  --dur: 140ms;
+  --ease: cubic-bezier(.2,.7,.3,1);
+  --maxw: 1560px;
+
+  --f-struct: "Avenir Next Condensed", "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
+  --f-text:   "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
+  --f-data:   Menlo, "SF Mono", ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1112; --field: #16191b; --raised: #1c2023;
+    --rule: #2b2f32;  --rule-hi: #414649; --edge: #565d61; --control: #767c80; --edge: #565d61; --control: #767c80;
+    --ink: #e9ebe8;   --ink-2: #a2a7a8; --ink-3: #8d9294;
+    --alert: #ff9c92; --alert-bg: #3a1d19;
+    --caution: #e2b263; --caution-bg: #332811;
+    --flag: #c3a8ec;  --flag-bg: #281e3a;
+    --leave: #9cc3f0; --leave-bg: #16263c;   --leave-edge: #3c5a80;
+    --holiday: #7fcfaa; --holiday-bg: #12291f; --holiday-edge: #34614c;
+    --duty: #7fd8d4; --duty-bg: #12302f; --duty-edge: #2f6663;
+    --gauge-on: #e9ebe8; --gauge-off: #383d40;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1112; --field: #16191b; --raised: #1c2023;
+  --rule: #2b2f32;  --rule-hi: #414649;
+  --ink: #e9ebe8;   --ink-2: #a2a7a8; --ink-3: #8d9294;
+  --alert: #ff9c92; --alert-bg: #3a1d19;
+  --caution: #e2b263; --caution-bg: #332811;
+  --flag: #c3a8ec;  --flag-bg: #281e3a;
+  --leave: #9cc3f0; --leave-bg: #16263c;   --leave-edge: #3c5a80;
+  --holiday: #7fcfaa; --holiday-bg: #12291f; --holiday-edge: #34614c;
+  --gauge-on: #e9ebe8; --gauge-off: #383d40;
+}
+
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; padding: var(--s6) var(--s5) var(--s8);
+  font-family: var(--f-text); font-size: 14px; line-height: 1.45;
+  color: var(--ink); background: var(--paper);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+}
+h1, h2, h3 { margin: 0; font-family: var(--f-struct); font-weight: 600; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
+::selection { background: var(--ink); color: var(--field); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--rule-hi); border-radius: var(--r-full); border: 3px solid transparent; background-clip: padding-box; }
+
+.wrap { max-width: var(--maxw); margin-inline: auto; }
+.num { font-family: var(--f-data); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.i { width: 1em; height: 1em; flex: none; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip-link {
+  position: absolute; left: var(--s4); top: -60px; z-index: 100;
+  background: var(--ink); color: var(--field); padding: var(--s3) var(--s5);
+  border-radius: var(--r); font-family: var(--f-struct); font-weight: 600;
+  transition: top var(--dur) var(--ease);
+}
+.skip-link:focus { top: var(--s4); }
+
+/* structural label — the one repeated typographic device */
+.eyebrow {
+  font-family: var(--f-struct); font-weight: 600; font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+}
+
+/* ---------- masthead ---------- */
+.masthead { display: flex; align-items: flex-start; gap: var(--s5); flex-wrap: wrap; margin-bottom: var(--s5); }
+.masthead-main { flex: 1 1 340px; min-width: 0; }
+h1 { font-size: 25px; letter-spacing: .005em; display: flex; align-items: center; gap: var(--s3); }
+.dateline {
+  margin: var(--s2) 0 0; font-size: 12.5px; color: var(--ink-2);
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4);
+}
+.dateline .sep { color: var(--rule-hi); }
+.leave-flag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--f-struct); font-weight: 600; font-size: 11px;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--leave); background: var(--leave-bg);
+  padding: 3px var(--s3); border-radius: var(--r);
+}
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  height: 32px; padding: 0 var(--s4);
+  background: none; border: 1px solid var(--control); border-radius: var(--r);
+  color: var(--ink-2); cursor: pointer;
+  font-family: var(--f-struct); font-weight: 600; font-size: 11px;
+  letter-spacing: .08em; text-transform: uppercase;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.theme-toggle:hover { color: var(--ink); border-color: var(--ink); }
+.theme-toggle .i { width: 13px; height: 13px; }
+
+/* ---------- census readout (was stat cards) ---------- */
+.stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  border: 1px solid var(--rule); border-radius: var(--r-lg);
+  background: var(--field); margin-bottom: var(--s5); overflow: hidden;
+}
+.stat { padding: var(--s4) var(--s5); border-left: 1px solid var(--rule); }
+.stat:first-child { border-left: 0; }
+.stat .k {
+  font-family: var(--f-struct); font-weight: 600; font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+}
+.stat .v {
+  font-family: var(--f-data); font-size: 25px; font-weight: 400;
+  letter-spacing: -.045em; line-height: 1.15; margin-top: 3px; color: var(--ink);
+}
+.stat .sub { font-size: 11.5px; color: var(--ink-2); margin-top: 1px; }
+.stat.is-warn .v { color: var(--alert); }
+
+/* ---------- control bar ---------- */
+.controlbar {
+  position: sticky; top: 0; z-index: 30;
+  margin: 0 calc(var(--s5) * -1) var(--s5); padding: var(--s3) var(--s5);
+  background: var(--paper); border-bottom: 1px solid transparent;
+  transition: border-color var(--dur) var(--ease);
+}
+.controlbar.is-stuck { border-bottom-color: var(--rule-hi); }
+.controlbar-inner { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
+
+.tablist { display: flex; gap: var(--s1); flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tablist::-webkit-scrollbar { display: none; }
+.tab {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  padding: var(--s2) var(--s4); min-height: 30px;
+  background: none; border: 1px solid transparent; border-radius: var(--r);
+  font-family: var(--f-struct); font-weight: 600; font-size: 12px;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--ink-2);
+  white-space: nowrap; cursor: pointer;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.tab:hover { color: var(--ink); border-color: var(--control); }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--field); border-color: var(--ink); }
+.tab .count { font-family: var(--f-data); font-size: 10.5px; letter-spacing: -.02em; opacity: .85; }
+.tab.is-danger[aria-selected="false"] .count { color: var(--alert); opacity: 1; }
+/* the archive sits apart from the working tabs, and stays achromatic —
+   a death is not an alert to action, so it gets no warning colour */
+.tab.is-memorial { margin-left: var(--s4); position: relative; color: var(--ink-3); }
+.tab.is-memorial::before {
+  content: ""; position: absolute; left: calc(var(--s4) * -1 + 1px); top: 20%; bottom: 20%;
+  width: 1px; background: var(--rule-hi);
+}
+.tab.is-memorial:hover { color: var(--ink); }
+
+.field-wrap { position: relative; display: flex; align-items: center; }
+.field-wrap > .i { position: absolute; left: 9px; width: 14px; height: 14px; color: var(--ink-3); pointer-events: none; }
+.field-wrap input {
+  width: 100%; height: 32px; padding: 0 var(--s7) 0 30px;
+  background: var(--raised); border: 1px solid var(--control); border-radius: var(--r);
+  font-size: 13px; transition: border-color var(--dur) var(--ease);
+}
+.field-wrap input::placeholder { color: var(--ink-3); }
+/* the page ships its own clear button — suppress WebKit's, or both show */
+.field-wrap input::-webkit-search-cancel-button,
+.field-wrap input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
+.field-wrap input:focus-visible { border-color: var(--ink); outline-offset: 0; }
+.field-wrap .clear {
+  position: absolute; right: 5px; width: 22px; height: 22px; padding: 0;
+  display: none; align-items: center; justify-content: center;
+  background: none; border: 0; border-radius: 50%; color: var(--ink-3); cursor: pointer;
+}
+.field-wrap .clear .i { width: 13px; height: 13px; }
+.field-wrap .clear:hover { color: var(--alert); }
+.field-wrap.has-value .clear { display: flex; }
+.searchfield { flex: 2 1 230px; min-width: 180px; }
+
+.select {
+  height: 32px; padding: 0 28px 0 var(--s3);
+  background-color: var(--raised); border: 1px solid var(--control); border-radius: var(--r);
+  font-size: 13px; cursor: pointer; color: var(--ink-2);
+  appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
+  background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+}
+.select:hover { border-color: var(--ink); }
+.result-note { margin: 0; font-family: var(--f-data); font-size: 11.5px; color: var(--ink-2); letter-spacing: -.02em; }
+.result-note strong { color: var(--ink); font-weight: 400; }
+
+/* ---------- panels ---------- */
+.panel[hidden] { display: none; }
+.panel:focus { outline: none; }
+.panel-intro { font-size: 12.5px; color: var(--ink-2); line-height: 1.55; max-width: 76ch; margin: 0 0 var(--s5); }
+.panel-intro strong { color: var(--ink); font-weight: 600; }
+
+/* ---------- calendar: the month is ground, clinic days are figure ---------- */
+.cal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(600px, 100%), 1fr)); gap: var(--s5); }
+.month { background: var(--field); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: var(--s4) var(--s5) var(--s5); }
+.month > h2 { font-size: 15px; letter-spacing: .02em; display: flex; align-items: baseline; gap: var(--s3); padding-bottom: var(--s3); }
+.month > h2 .mcount { font-family: var(--f-data); font-size: 11px; font-weight: 400; color: var(--ink-3); letter-spacing: -.02em; }
+
+.cal { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.cal th abbr { text-decoration: none; cursor: help; }
+.cal th {
+  font-family: var(--f-struct); font-weight: 600; font-size: 9.5px;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
+  text-align: center; padding: 0 0 var(--s2); border-bottom: 1px solid var(--rule-hi);
+}
+/* ledger ruling: horizontal only */
+.cal td { padding: var(--s2) 2px; vertical-align: top; border-bottom: 1px solid var(--rule); }
+.cal tbody tr:last-child td { border-bottom: 0; }
+
+.day {
+  position: relative; display: block; width: 100%; min-height: 30px;
+  padding: var(--s2) var(--s2) var(--s2) var(--s2); text-align: left;
+  background: none; border: 1px solid transparent; border-radius: var(--r);
+  color: var(--ink); font: inherit; overflow: hidden;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+/* only days with clinic get a body */
+.day.has-pts { min-height: 66px; background: var(--raised); border-color: var(--edge); }
+button.day { cursor: pointer; }
+button.day:hover { border-color: var(--ink); }
+button.day:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; z-index: 3; }
+
+.day-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 15px; min-width: 0; }
+.daynum { flex: 0 0 auto; }
+.load { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.gauge { flex: 0 1 auto; overflow: hidden; }
+.ct { flex: 0 0 auto; }
+.daynum { font-family: var(--f-data); font-size: 11px; letter-spacing: -.03em; color: var(--ink-3); }
+.day.has-pts .daynum { color: var(--ink); }
+
+/* today: inverted, not colored */
+.day.is-today .daynum {
+  background: var(--ink); color: var(--field);
+  padding: 1px 4px; border-radius: 2px; margin: -1px -1px -1px -2px;
+}
+.day.is-today { border-color: var(--ink); }
+
+/* the signature: a five-step load gauge, read by count of filled segments */
+.load { display: inline-flex; align-items: center; gap: var(--s1); }
+.gauge { display: inline-flex; gap: 1.5px; }
+.gauge i { width: 3.5px; height: 10px; border-radius: .5px; background: var(--gauge-off); }
+.gauge i.on { background: var(--gauge-on); }
+.ct { font-family: var(--f-data); font-size: 10.5px; letter-spacing: -.04em; color: var(--ink); }
+
+.roster { margin: var(--s2) 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0; }
+.roster li {
+  font-family: var(--f-struct); font-weight: 500; font-size: 11.5px; line-height: 1.34;
+  letter-spacing: .015em; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.roster li.more { font-family: var(--f-data); font-size: 10px; letter-spacing: -.02em; color: var(--ink-3); margin-top: 1px; }
+
+/* for-OR marks the patient, not the day: a leading notch on the name.
+   Presence/absence of the shape carries it — hue is only reinforcement. */
+.or-mark {
+  display: inline-block; width: 5px; height: 5px; flex: none;
+  margin-right: 5px; vertical-align: 1px;
+  background: var(--flag);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.roster li.is-or { color: var(--ink); }
+.roster li.is-or .or-mark { margin-left: -1px; }
+.or-key {
+  display: inline-flex; align-items: center;
+  font-family: var(--f-struct); font-weight: 500; font-size: 11.5px;
+  letter-spacing: .015em; color: var(--ink);
+}
+
+/* day flags — chroma only where it means something */
+.flag {
+  display: inline-flex; align-items: center; gap: 3px; margin-top: 3px;
+  font-family: var(--f-struct); font-weight: 600; font-size: 9px;
+  letter-spacing: .08em; text-transform: uppercase;
+  padding: 1px 4px; border-radius: 2px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
+.flag .i { width: 9px; height: 9px; stroke-width: 2.25; }
+/* the label is the flex child, so truncation has to live on it, not the chip */
+.flag .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flag.f-leave   { background: var(--leave-bg);   color: var(--leave); }
+.flag.f-clash   { background: var(--alert-bg);   color: var(--alert); }
+.flag.f-half    { background: var(--caution-bg); color: var(--caution); }
+/* a regular holiday is solid; a special non-working day is outlined — the
+   distinction is legal (pay rules) and clinic-relevant, so it gets weight,
+   not a second hue. A tentative date dashes the same outline. */
+.flag.f-holiday { background: var(--holiday-bg); color: var(--holiday); }
+.flag.f-holiday.is-special {
+  background: none; box-shadow: inset 0 0 0 1px var(--holiday-edge); padding: 0 4px;
+}
+.flag.f-holiday.is-tent .nm { border-bottom: 1px dashed currentColor; opacity: .92; }
+.flag.f-duty    { background: var(--duty-bg);    color: var(--duty); }
+
+.day.is-holiday { background-color: var(--holiday-bg); border-color: var(--holiday-edge); }
+.day.is-holiday .daynum { color: var(--holiday); }
+/* duty is a personal-schedule mark, not a clinic-closure one — it never
+   overrides the day background the way holiday/leave do, just tints the edge. */
+.day.is-duty { border-color: var(--duty-edge); }
+.day.is-duty .daynum { color: var(--duty); }
+.day.is-leave {
+  background-color: var(--leave-bg);
+  background-image: repeating-linear-gradient(-45deg, var(--leave-edge) 0 1px, transparent 1px 6px);
+  border-color: var(--leave-edge);
+}
+.day.is-leave .daynum { color: var(--leave); }
+.day.is-clash, .day.is-hclash { border-color: var(--alert); background-color: var(--alert-bg); background-image: none; }
+.day.is-clash .daynum, .day.is-hclash .daynum { color: var(--alert); }
+.day.is-today.is-holiday .daynum, .day.is-today.is-leave .daynum,
+.day.is-today.is-clash .daynum,   .day.is-today.is-hclash .daynum { color: var(--field); }
+/* today still outranks a holiday/leave tint for the border */
+.day.is-today.is-holiday, .day.is-today.is-leave { border-color: var(--ink); }
+
+/* ---------- legend ---------- */
+.legend {
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--s3) var(--s6);
+  margin-top: var(--s5); padding: var(--s3) var(--s5);
+  border: 1px solid var(--rule); border-radius: var(--r-lg); background: var(--field);
+  font-size: 11.5px; color: var(--ink-2);
+}
+.legend-group { display: flex; align-items: center; gap: var(--s2); }
+.legend-group .lbl {
+  font-family: var(--f-struct); font-weight: 600; font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+}
+.legend .load + .load { margin-left: var(--s2); }
+/* the hint is guidance, not a key entry — it sits last and reads quieter */
+.legend-hint { margin-left: auto; color: var(--ink-3); font-style: italic; }
+
+/* ---------- tables ---------- */
+.section { margin-bottom: var(--s7); }
+.section-head {
+  display: flex; align-items: baseline; gap: var(--s3);
+  font-family: var(--f-struct); font-weight: 600; font-size: 12px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink);
+  padding-bottom: var(--s3); margin-bottom: var(--s4); border-bottom: 1px solid var(--rule-hi);
+}
+.section-head .n { font-family: var(--f-data); font-size: 11px; letter-spacing: -.02em; text-transform: none; color: var(--ink-3); }
+.section-head.is-danger { color: var(--alert); border-bottom-color: var(--alert); }
+.section-head.is-caution { color: var(--caution); border-bottom-color: var(--caution); }
+
+.tscroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--r-lg); background: var(--field); }
+.tscroll:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+table.data { width: 100%; border-collapse: collapse; min-width: 720px; }
+table.data th { text-align: left; padding: 0; background: var(--field); border-bottom: 1px solid var(--rule-hi); position: sticky; top: 0; z-index: 2; }
+table.data th > .th-label, table.data th > button {
+  display: flex; align-items: center; gap: 4px; width: 100%;
+  padding: var(--s3) var(--s4); background: none; border: 0; text-align: left;
+  font-family: var(--f-struct); font-weight: 600; font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+}
+table.data th > button { cursor: pointer; transition: color var(--dur) var(--ease); }
+table.data th > button:hover { color: var(--ink); }
+table.data th > button .i { width: 10px; height: 10px; opacity: 0; }
+table.data th[aria-sort] > button { color: var(--ink); }
+table.data th[aria-sort] > button .i { opacity: 1; }
+table.data td { padding: var(--s3) var(--s4); font-size: 13px; vertical-align: top; border-bottom: 1px solid var(--rule); }
+table.data tbody tr:last-child td { border-bottom: 0; }
+table.data tbody tr[data-idx], table.data tbody tr[data-mort] { cursor: pointer; }
+table.data tbody tr[data-idx]:hover td, table.data tbody tr[data-mort]:hover td { background: var(--raised); }
+table.data tbody tr[data-idx]:focus-visible, table.data tbody tr[data-mort]:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+td.cell-name { font-weight: 600; min-width: 160px; }
+td.cell-date { white-space: nowrap; }
+td.cell-cn { font-family: var(--f-data); font-size: 12px; letter-spacing: -.03em; color: var(--ink-2); }
+td.snip { font-size: 12px; color: var(--ink-2); line-height: 1.45; min-width: 190px; max-width: 300px; }
+td.snip .txt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+td.snip .none { color: var(--ink-3); }
+.date-main { display: block; font-family: var(--f-data); font-size: 12px; letter-spacing: -.03em; color: var(--ink); }
+
+/* ---------- pills ---------- */
+.pill {
+  display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
+  padding: 2px 7px; border-radius: 2px;
+  font-family: var(--f-struct); font-weight: 600; font-size: 10.5px;
+  letter-spacing: .07em; text-transform: uppercase; line-height: 1.55;
+}
+.pill .i { width: 11px; height: 11px; }
+.pill.tag     { background: none; color: var(--ink-2); border: 1px solid var(--rule-hi); padding: 1px 6px; }
+.pill.overdue { background: var(--alert-bg);   color: var(--alert); }
+.pill.mild    { background: var(--caution-bg); color: var(--caution); }
+.pill.or      { background: var(--flag-bg);    color: var(--flag); }
+.pill.or .or-mark { background: currentColor; margin-right: 4px; }
+.pill.labs    { background: var(--caution-bg); color: var(--caution); }
+.pill.labs .i { margin-right: 1px; }
+.pill.memorial { background: none; color: var(--ink-2); border: 1px solid var(--rule-hi); padding: 1px 6px; }
+.pill.tent    { background: var(--flag-bg);    color: var(--flag); font-family: var(--f-data); text-transform: none; letter-spacing: -.02em; }
+.pill.source  { background: none; color: var(--ink-3); border: 1px solid var(--rule); padding: 1px 6px; }
+.pill.cleared     { background: var(--holiday-bg); color: var(--holiday); }
+.pill.notcleared  { background: var(--caution-bg); color: var(--caution); }
+.pill.cleared .clear-mark, .pill.notcleared .clear-mark { background: currentColor; margin-right: 4px; }
+.clear-mark {
+  display: inline-block; width: 5px; height: 5px; flex: none;
+  border-radius: 50%; vertical-align: 1px;
+}
+/* Pending OR: grouped by clearance so the two worklists (needs action vs.
+   ready) don't have to be read off the status prose row by row. */
+table.data tr.group-row td {
+  background: var(--field); cursor: default;
+  font-family: var(--f-struct); font-weight: 600; font-size: 10.5px;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: var(--s2) var(--s4); border-bottom: 1px solid var(--rule-hi);
+}
+table.data tr.group-row .n { font-family: var(--f-data); font-size: 11px; letter-spacing: -.02em; text-transform: none; margin-left: 6px; color: var(--ink-3); }
+table.data tr.group-row.is-notcleared td { color: var(--caution); }
+table.data tr.group-row.is-cleared td { color: var(--holiday); border-bottom-color: var(--holiday-edge); }
+/* ---------- problem glyphs ---------- */
+/* Category flags are glyphs, not text pills. A patient now carries a median of
+   three categories, and three uppercase words per row buried the name they sit
+   next to. Shape is read faster than a word at this density, costs a fixed 13px
+   each, and never widens the Patient column. They stay monochrome on purpose:
+   this page spends chroma only on exceptions (overdue, half-day, for-OR), and
+   the old badge was spending all three accent hues on classification.
+   Full labels live on the hover title, the screen-reader text, the Problem key
+   under the filters, and the detail sheet. */
+.probs { display: inline-flex; align-items: center; gap: 3px; margin-left: 7px; vertical-align: -2px; color: var(--ink-2); }
+.probs .i { width: 13px; height: 13px; stroke-width: 1.9; }
+.probs .more { font-family: var(--f-data); font-size: 9.5px; letter-spacing: -.03em; margin-left: 1px; }
+tbody tr:hover .probs { color: var(--ink); }
+
+.probkey > summary {
+  display: inline-flex; align-items: center; gap: var(--s1); cursor: pointer; list-style: none;
+  font-family: var(--f-struct); font-weight: 600; font-size: 11px;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3);
+  transition: color var(--dur) var(--ease);
+}
+.probkey > summary::-webkit-details-marker { display: none; }
+.probkey > summary:hover { color: var(--ink); }
+.probkey > summary .i.chev { width: 10px; height: 10px; transition: transform var(--dur) var(--ease); }
+.probkey[open] > summary .i.chev { transform: rotate(90deg); }
+.probkey[open] { flex: 1 0 100%; }
+.probkey-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--s2) var(--s5); margin-top: var(--s3);
+  padding: var(--s4) var(--s5); background: var(--raised);
+  border: 1px solid var(--rule); border-radius: var(--r);
+}
+.probkey-grid span { display: flex; align-items: center; gap: var(--s3); font-size: 12.5px; color: var(--ink); }
+.probkey-grid .i { width: 13px; height: 13px; stroke-width: 1.9; color: var(--ink-3); }
+.probkey-grid em { margin-left: auto; font-family: var(--f-data); font-size: 10.5px; font-style: normal; color: var(--ink-3); }
+.probkey-note { margin: var(--s2) 0 0; font-size: 12px; color: var(--ink-3); font-style: italic; }
+
+.prob-line { display: inline-flex; align-items: center; gap: var(--s2); margin-right: var(--s5); white-space: nowrap; }
+.prob-line .i { width: 13px; height: 13px; stroke-width: 1.9; color: var(--ink-3); }
+.nawc-tier { margin: 0 0 2px; }
+.nawc-tier > summary { cursor: pointer; }
+.nawc-tier > summary .i.chev { width: 11px; height: 11px; transition: transform var(--dur) var(--ease); align-self: center; }
+.nawc-tier[open] > summary .i.chev { transform: rotate(90deg); }
+.nawc-tier .tier-note { color: var(--ink-3); font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 8px; }
+.pill.overdue.num, .pill.mild.num { font-family: var(--f-data); text-transform: none; letter-spacing: -.02em; }
+
+/* ---------- month accordions ---------- */
+.mgroup { border: 1px solid var(--rule); border-radius: var(--r-lg); margin-bottom: var(--s3); overflow: hidden; background: var(--field); }
+.mgroup > summary {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s3) var(--s4); min-height: 38px; cursor: pointer; list-style: none;
+  font-family: var(--f-struct); font-weight: 600; font-size: 12.5px;
+  letter-spacing: .08em; text-transform: uppercase;
+  transition: background var(--dur) var(--ease);
+}
+.mgroup > summary::-webkit-details-marker { display: none; }
+.mgroup > summary:hover { background: var(--raised); }
+.mgroup > summary .i.chev { width: 12px; height: 12px; color: var(--ink-3); transition: transform var(--dur) var(--ease); }
+.mgroup[open] > summary .i.chev { transform: rotate(90deg); }
+.mgroup > summary .n { margin-left: auto; font-family: var(--f-data); font-size: 11px; letter-spacing: -.02em; text-transform: none; color: var(--ink-2); }
+.mgroup .tscroll { border: 0; border-top: 1px solid var(--rule-hi); border-radius: 0; }
+
+details.fold > summary { cursor: pointer; list-style: none; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary .i.chev { width: 11px; height: 11px; transition: transform var(--dur) var(--ease); align-self: center; }
+details.fold[open] > summary .i.chev { transform: rotate(90deg); }
+
+/* ---------- reviewed ---------- */
+tr.reviewed td { color: var(--ink-3); }
+tr.reviewed td.cell-name { font-weight: 400; }
+.btn-mark {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 var(--s3);
+  background: none; border: 1px solid var(--control); border-radius: var(--r);
+  font-family: var(--f-struct); font-weight: 600; font-size: 10.5px;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--ink-2);
+  cursor: pointer; white-space: nowrap;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.btn-mark .i { width: 11px; height: 11px; }
+.btn-mark:hover { background: var(--ink); border-color: var(--ink); color: var(--field); }
+tr.reviewed .btn-mark { border-style: dashed; }
+
+.empty {
+  padding: var(--s8) var(--s5); text-align: center; color: var(--ink-2); font-size: 13px;
+  border: 1px dashed var(--rule-hi); border-radius: var(--r-lg);
+}
+.empty .i { width: 20px; height: 20px; color: var(--ink-3); display: block; margin: 0 auto var(--s3); }
+
+/* ---------- dialogs ---------- */
+.scrim {
+  position: fixed; inset: 0; z-index: 60; display: none;
+  align-items: center; justify-content: center; padding: var(--s5);
+  background: rgba(20,22,26,.6);
+}
+.scrim.open { display: flex; animation: fade var(--dur) var(--ease); }
+.sheet {
+  position: relative; width: min(100%, 440px); max-height: min(78vh, 640px);
+  display: flex; flex-direction: column;
+  background: var(--field); border: 1px solid var(--rule-hi); border-radius: var(--r-lg);
+}
+.sheet.wide { width: min(100%, 620px); }
+.scrim.open .sheet { animation: pop 180ms var(--ease); }
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes pop  { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+.sheet-head { padding: var(--s5) var(--s7) var(--s3) var(--s5); border-bottom: 1px solid var(--rule-hi); }
+.sheet-head h3 { font-size: 17px; letter-spacing: .01em; }
+.sheet-head .sub { margin: 3px 0 0; font-family: var(--f-data); font-size: 11.5px; letter-spacing: -.02em; color: var(--ink-2); }
+.sheet-body { padding: var(--s4) var(--s5) var(--s5); overflow-y: auto; }
+.sheet-close {
+  position: absolute; top: var(--s4); right: var(--s4);
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid var(--control); border-radius: var(--r);
+  color: var(--ink-3); cursor: pointer;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.sheet-close .i { width: 13px; height: 13px; }
+.sheet-close:hover { color: var(--alert); border-color: var(--alert); }
+.roster-list { margin: 0; padding: 0; list-style: none; }
+.roster-list li { border-bottom: 1px solid var(--rule); }
+.roster-list li:last-child { border-bottom: 0; }
+/* each patient is a control: day -> patient -> chart */
+.roster-list .row {
+  display: flex; align-items: center; gap: var(--s3);
+  min-height: 44px; padding: var(--s3) var(--s3) var(--s3) var(--s2);
+  margin-inline: calc(var(--s2) * -1);
+  width: calc(100% + var(--s2) * 2);
+  background: none; border: 0; border-radius: var(--r);
+  font: inherit; font-size: 13px; color: var(--ink); text-align: left; cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+.roster-list .row:hover { background: var(--raised); }
+.roster-list .row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.roster-list .nm { font-weight: 600; flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.roster-list .row > .i.go { width: 12px; height: 12px; flex: none; color: var(--ink-3); }
+.roster-list .row:hover > .i.go { color: var(--ink); }
+.fieldblock + .fieldblock { margin-top: var(--s5); }
+.fieldblock .k {
+  font-family: var(--f-struct); font-weight: 600; font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: var(--s2);
+}
+.fieldblock .k { display: flex; align-items: center; }
+.fieldblock .k .or-mark { vertical-align: 0; }
+.fieldblock .v { font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fieldblock .v.none { color: var(--ink-3); }
+.fieldblock .v.sub-v { margin-top: var(--s2); font-size: 12.5px; color: var(--ink-2); }
+.fieldblock[hidden] { display: none; }
+
+/* a stacked sheet must sit above the one that opened it */
+.scrim.is-stacked { z-index: 70; background: rgba(20,22,26,.45); }
+
+/* ---------- filter bank ---------- */
+/* On a desktop the filters are just more children of the control bar, so the
+   wrapper dissolves. On a phone it becomes a drawer behind one funnel button —
+   the sticky bar has to stay short or it eats a quarter of the screen. */
+.filterbank { display: contents; }
+.filters-toggle { display: none; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 640px) {
+  body {
+    padding: var(--s5) calc(var(--s4) + env(safe-area-inset-left))
+             calc(var(--s7) + env(safe-area-inset-bottom))
+             calc(var(--s4) + env(safe-area-inset-right));
+  }
+  h1 { font-size: 21px; }
+  .masthead { gap: var(--s3); align-items: center; }
+  .theme-toggle { min-height: 44px; }
+
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .stat { padding: var(--s3) var(--s4); }
+  .stat:nth-child(odd) { border-left: 0; }
+  .stat:nth-child(n+3) { border-top: 1px solid var(--rule); }
+  .stat .v { font-size: 22px; }
+
+  /* ---- control bar: one 44px row when idle ---- */
+  .controlbar {
+    margin-inline: calc(var(--s4) * -1); padding-inline: var(--s4);
+    padding-top: var(--s2); padding-bottom: var(--s2);
+  }
+  /* wrap, but the rail has a zero basis so it shrinks instead of pushing the
+     funnel onto its own line — only the drawer ever takes a second row */
+  .controlbar-inner { flex-wrap: wrap; gap: var(--s2); }
+  .tablist { flex: 1 1 0; min-width: 0; scroll-snap-type: x proximity; }
+  .tab { scroll-snap-align: start; min-height: 44px; padding-inline: var(--s3); }
+  /* the rail holds ~2.5 of 7 tabs — fade the cut edge so the rest is findable */
+  .tablist {
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 20px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 20px), transparent 100%);
+  }
+  .tablist.at-end { -webkit-mask-image: none; mask-image: none; }
+  .tab.is-memorial { margin-left: var(--s3); }
+  .tab.is-memorial::before { left: calc(var(--s3) * -1 + 1px); }
+
+  .filters-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    position: relative; flex: none; width: 44px; height: 44px; padding: 0;
+    background: none; border: 1px solid var(--control); border-radius: var(--r);
+    color: var(--ink-2); cursor: pointer;
+  }
+  .filters-toggle span:not(.dot) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .filters-toggle .i { width: 16px; height: 16px; }
+  .filters-toggle .i.chev { display: none; }
+  .filters-toggle[aria-expanded="true"] { background: var(--ink); border-color: var(--ink); color: var(--field); }
+  /* a filter left on is invisible once the drawer is shut — mark the button */
+  .filters-toggle .dot {
+    position: absolute; top: 5px; right: 5px; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--alert);
+  }
+  .filters-toggle[aria-expanded="true"] .dot { background: var(--field); }
+
+  .filterbank { display: none; }
+  .filterbank.is-open {
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3);
+    flex: 1 1 100%; margin-top: var(--s3);
+    max-height: 50dvh; overflow-y: auto; overscroll-behavior: contain;
+  }
+  .searchfield { flex: 1 1 100%; }
+  .field-wrap input { height: 44px; font-size: 16px; }  /* 16px or iOS zooms the page */
+  .field-wrap .clear { right: 8px; width: 32px; height: 32px; }
+  .select { flex: 1 1 140px; height: 44px; font-size: 16px; }
+  .result-note { flex: 1 1 100%; }
+  .probkey { flex: 1 1 100%; }
+  .probkey > summary { min-height: 34px; }
+
+  /* ---- calendar ---- */
+  /* ~31px of usable width can't hold a name; phones get a tappable load grid */
+  .roster { display: none; }
+  .month { padding: var(--s4) var(--s3) var(--s4); }
+  .day { min-height: 26px; padding: var(--s1); }
+  .day-top { flex-direction: column; align-items: flex-start; gap: 2px; }
+  /* 36px of usable cell can't hold an 8-segment gauge and the count side by
+     side — the count was being clipped out. Stack them instead: gauge for the
+     glance down a month, number for the actual figure. */
+  .day .load { flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; }
+  .day .gauge { gap: 1px; }
+  .day .gauge i { width: 2.5px; height: 7px; }
+  .day .ct { font-size: 11.5px; }
+  .day.has-pts { min-height: 56px; }
+  .flag { font-size: 0; gap: 0; padding: 2px; }
+  .flag .i { width: 10px; height: 10px; }
+  .legend { padding: var(--s4); gap: var(--s3) var(--s5); }
+  .legend-hint { margin-left: 0; flex: 1 1 100%; }
+
+  /* ---- tables become cards ---- */
+  /* 880px of columns in a 350px window means one visible column and a swipe
+     per field. Each row restacks into a ledger card: the name is the heading,
+     every other cell keeps its column name as a label. */
+  .tscroll { overflow-x: visible; border: 0; background: none; }
+  .mgroup .tscroll { border-top: 0; }
+  .mgroup > summary { min-height: 44px; }
+  summary.section-head { min-height: 44px; align-items: center; }
+  table.data { min-width: 0; display: block; }
+  table.data thead {
+    display: flex; flex-wrap: wrap; gap: var(--s1);
+    padding: 0 0 var(--s3); border-bottom: 1px solid var(--rule);
+  }
+  table.data thead tr { display: contents; }
+  table.data th { display: block; position: static; border: 0; background: none; }
+  table.data th:not([data-sort]) { display: none; }
+  table.data th > button {
+    width: auto; min-height: 32px; padding: var(--s1) var(--s3);
+    border: 1px solid var(--rule-hi); border-radius: var(--r);
+  }
+  table.data th[aria-sort] > button { border-color: var(--ink); }
+  table.data tbody { display: block; }
+  table.data tbody tr {
+    /* column, not block, so the name can be pulled to the top of the card —
+       the Upcoming table sorts Date into the first cell */
+    display: flex; flex-direction: column; padding: var(--s4); margin-top: var(--s3);
+    background: var(--field); border: 1px solid var(--rule); border-radius: var(--r-lg);
+  }
+  table.data tbody tr[data-idx]:hover td, table.data tbody tr[data-mort]:hover td { background: none; }
+  table.data tbody tr[data-idx]:active, table.data tbody tr[data-mort]:active { background: var(--raised); }
+  table.data td {
+    display: flex; align-items: baseline; gap: var(--s4);
+    padding: var(--s2) 0 0; border: 0; font-size: 13px;
+  }
+  table.data td::before {
+    /* normal, not the nowrap inherited from .cell-date — long column names
+       like "Scheduled follow-up" have to wrap inside the label gutter */
+    content: attr(data-label); flex: 0 0 104px; white-space: normal;
+    font-family: var(--f-struct); font-weight: 600; font-size: 10px;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+  }
+  /* the name is the card's heading, not a labelled field */
+  table.data td.cell-name {
+    order: -1;
+    display: block; padding: 0 0 var(--s2); margin-bottom: var(--s2);
+    font-size: 15px; border-bottom: 1px solid var(--rule);
+  }
+  table.data td.cell-name::before { content: none; }
+  table.data td.snip { display: block; max-width: none; min-width: 0; }
+  table.data td.snip::before { display: block; margin-bottom: 2px; }
+  table.data td.snip .txt { -webkit-line-clamp: 3; }
+  /* an em-dash under a label is noise on a card — drop the whole field */
+  table.data td.is-blank { display: none; }
+  table.data tr.group-row {
+    display: block; padding: var(--s3) 0 var(--s2); margin-top: var(--s5);
+    background: none; border: 0; border-bottom: 1px solid var(--rule-hi); border-radius: 0;
+  }
+  table.data tr.group-row td { display: block; padding: 0; background: none; border: 0; }
+  table.data tr.group-row td::before { content: none; }
+  .btn-mark { min-height: 44px; padding-inline: var(--s4); }
+
+  /* ---- sheets sit at the bottom, in thumb reach ---- */
+  .scrim { align-items: flex-end; padding: 0; }
+  .sheet {
+    width: 100%; max-height: 85dvh;
+    border-radius: var(--r-lg) var(--r-lg) 0 0; border-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .scrim.open .sheet { animation: slide-up 200ms var(--ease); }
+  .sheet-close { width: 40px; height: 40px; }
+  .sheet-head { padding-right: 56px; }
+  @keyframes slide-up { from { transform: translateY(14px); opacity: .6 } to { transform: none; opacity: 1 } }
+}
+
+/* kill the 300ms tap delay on everything that is actually tappable */
+@media (pointer: coarse) {
+  button, a, summary, select, [role="tab"], tr[data-idx], tr[data-mort] { touch-action: manipulation; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important; scroll-behavior: auto !important;
+  }
+}
+@media print {
+  body { background: #fff; padding: 0; }
+  .controlbar, .theme-toggle, .legend, .skip-link, .btn-mark, .sheet-close { display: none !important; }
+  .month, .tscroll, .mgroup, .stats { break-inside: avoid; }
+  .mgroup[open] > summary .i.chev { display: none; }
+  table.data { min-width: 0; font-size: 10px; }
+  .tscroll { overflow: visible; }
+}
+
+/* ============================================================
+   APP LAYER — editing, sync status, forms. Added 2026-11-09 when
+   the calendar became an installable app backed by a private repo.
+   ============================================================ */
+.mast-actions { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.tbtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  height: 32px; padding: 0 var(--s4);
+  background: none; border: 1px solid var(--control); border-radius: var(--r);
+  color: var(--ink-2); cursor: pointer; position: relative;
+  font-family: var(--f-struct); font-weight: 600; font-size: 11px;
+  letter-spacing: .08em; text-transform: uppercase; white-space: nowrap;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.tbtn:hover { color: var(--ink); border-color: var(--ink); }
+.tbtn .i { width: 13px; height: 13px; }
+.tbtn.is-primary { background: var(--ink); border-color: var(--ink); color: var(--field); }
+.tbtn.is-primary:hover { opacity: .88; color: var(--field); }
+.tbtn[hidden] { display: none; }
+/* the sync button carries a state dot: grey idle, amber unsaved, red failed */
+.tbtn .sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); flex: none; }
+.tbtn.s-ok .sdot      { background: var(--holiday); }
+.tbtn.s-pending .sdot { background: var(--caution); }
+.tbtn.s-error .sdot   { background: var(--alert); }
+.tbtn.s-busy .sdot    { background: var(--leave); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .25 } }
+#syncLine.is-error { color: var(--alert); }
+#syncLine.is-pending { color: var(--caution); }
+
+table.data tbody tr[data-adm], table.data tbody tr[data-dis], table.data tbody tr[data-por] { cursor: pointer; }
+table.data tbody tr[data-adm]:hover td, table.data tbody tr[data-dis]:hover td, table.data tbody tr[data-por]:hover td { background: var(--raised); }
+table.data tbody tr[data-adm]:focus-visible, table.data tbody tr[data-dis]:focus-visible, table.data tbody tr[data-por]:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+
+/* sheet footer: the actions on whatever the sheet is showing */
+.sheet-foot {
+  display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center;
+  padding: var(--s3) var(--s5) var(--s4); border-top: 1px solid var(--rule-hi);
+}
+.sheet-foot:empty, .sheet-foot[hidden] { display: none; }
+.sheet-foot .spacer { flex: 1 1 auto; }
+.tbtn.is-danger { color: var(--alert); border-color: var(--alert); }
+.tbtn.is-danger:hover { background: var(--alert-bg); }
+
+/* ---------- forms ---------- */
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4) var(--s4); }
+.form .full { grid-column: 1 / -1; }
+.form [hidden] { display: none !important; }
+.fl { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fl > span, .fset > legend {
+  font-family: var(--f-struct); font-weight: 600; font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+}
+.in {
+  width: 100%; min-height: 34px; padding: 6px var(--s3);
+  background: var(--raised); border: 1px solid var(--control); border-radius: var(--r);
+  font-size: 13.5px; color: var(--ink);
+}
+.in:focus-visible { border-color: var(--ink); outline-offset: 0; }
+textarea.in { min-height: 76px; resize: vertical; line-height: 1.45; font-family: var(--f-text); }
+select.in { appearance: none; -webkit-appearance: none; padding-right: 28px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
+  background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+.in.num { font-family: var(--f-data); }
+.chk { display: flex; align-items: center; gap: var(--s3); font-size: 13px; cursor: pointer; min-height: 32px; }
+.chk input { width: 18px; height: 18px; margin: 0; accent-color: var(--ink); flex: none; }
+.fset { border: 1px solid var(--rule); border-radius: var(--r-lg); padding: var(--s3) var(--s4) var(--s4); margin: 0; display: grid; gap: var(--s3); }
+.fset > legend { padding: 0 4px; }
+.hint { margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.45; }
+.hint.warn { color: var(--caution); }
+.hint.bad { color: var(--alert); }
+.hint code { font-family: var(--f-data); font-size: 11.5px; }
+
+.quick { display: flex; flex-wrap: wrap; gap: 4px; }
+.quick button {
+  min-height: 28px; padding: 0 var(--s3);
+  background: none; border: 1px solid var(--rule-hi); border-radius: var(--r-full);
+  font-family: var(--f-data); font-size: 11.5px; letter-spacing: -.02em; color: var(--ink-2); cursor: pointer;
+}
+.quick button:hover { border-color: var(--ink); color: var(--ink); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chips label {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 var(--s3);
+  border: 1px solid var(--rule-hi); border-radius: var(--r-full);
+  font-size: 12px; color: var(--ink-2); cursor: pointer; user-select: none;
+}
+.chips label .i { width: 13px; height: 13px; }
+.chips input { position: absolute; opacity: 0; pointer-events: none; }
+.chips label:has(input:checked) { background: var(--ink); border-color: var(--ink); color: var(--field); }
+.chips label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* schedule editor */
+.sched-sec + .sched-sec { margin-top: var(--s6); }
+.sched-sec h4 {
+  margin: 0 0 var(--s2); font-family: var(--f-struct); font-weight: 600; font-size: 12px;
+  letter-spacing: .08em; text-transform: uppercase; display: flex; align-items: center; gap: var(--s3);
+}
+.sched-sec h4 .n { font-family: var(--f-data); font-weight: 400; color: var(--ink-3); letter-spacing: -.02em; }
+.sched-list { list-style: none; margin: 0 0 var(--s3); padding: 0; }
+.sched-list li {
+  display: flex; align-items: center; gap: var(--s3); min-height: 38px;
+  border-bottom: 1px solid var(--rule); font-size: 13px;
+}
+.sched-list li.is-past { color: var(--ink-3); }
+.sched-list .d { font-family: var(--f-data); font-size: 12px; letter-spacing: -.02em; flex: none; min-width: 9.5em; }
+.sched-list .t { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.sched-list .x {
+  flex: none; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid transparent; border-radius: var(--r); color: var(--ink-3); cursor: pointer;
+}
+.sched-list .x:hover { color: var(--alert); border-color: var(--alert); }
+.sched-list .x .i { width: 12px; height: 12px; }
+.sched-add { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: flex-end; }
+.sched-add .in { width: auto; flex: 1 1 120px; }
+.sched-add .in[type=date] { flex: 0 1 150px; }
+.sched-more { background: none; border: 0; padding: 0; color: var(--ink-2); font-size: 12px; text-decoration: underline; cursor: pointer; margin-bottom: var(--s3); }
+
+/* toast */
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--s6) + env(safe-area-inset-bottom)); z-index: 90;
+  transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
+  max-width: min(92vw, 460px); padding: var(--s3) var(--s5);
+  background: var(--ink); color: var(--field); border-radius: var(--r-lg);
+  font-size: 13px; line-height: 1.4; text-align: center;
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.is-error { background: var(--alert); color: #fff; }
+
+/* the vault copy is a read-only snapshot: no edit controls at all */
+.is-snapshot .edit-only { display: none !important; }
+
+@media (max-width: 640px) {
+  .mast-actions { gap: var(--s2); }
+  .tbtn { min-height: 44px; min-width: 44px; padding: 0 var(--s3); }
+  .tbtn .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .tbtn .i { width: 16px; height: 16px; }
+  .tbtn .sdot { position: absolute; top: 6px; right: 6px; }
+  .sheet-foot .tbtn .lbl, .form .tbtn .lbl, .sched-add .tbtn .lbl { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .sheet-foot { padding-bottom: calc(var(--s4) + env(safe-area-inset-bottom)); }
+  .sheet:has(.sheet-foot:not(:empty):not([hidden])) { padding-bottom: 0; }
+  .form { grid-template-columns: 1fr; }
+  .in { min-height: 44px; font-size: 16px; }   /* 16px or iOS zooms */
+  textarea.in { font-size: 16px; }
+  .quick button { min-height: 36px; }
+  .chips label { min-height: 36px; }
+  .sched-add .in, .sched-add .in[type=date] { flex: 1 1 100%; }
+  .sched-list .d { min-width: 0; }
+}
+@media print { .mast-actions, .sheet-foot, .toast { display: none !important; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-half" viewBox="0 0 24 24"><path d="M12 2v2M4.9 4.9l1.4 1.4M2 12h2M19.1 4.9l-1.4 1.4M22 12h-2"/><path d="M16 17a4 4 0 1 0-8 0"/><path d="M3 21h18"/></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="M17.8 19.2 16 11l3.5-3.5a2.1 2.1 0 0 0-3-3L13 8 4.8 6.2a1 1 0 0 0-.9 1.7l5.6 3.4-2.3 2.3-2.3-.6a1 1 0 0 0-1 1.6l2.6 2.6a1 1 0 0 0 1.6-.2l.6-2.3 2.3-2.3 3.4 5.6a1 1 0 0 0 1.7-.9Z"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1Z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.6 2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-2.9-5.4 2.9 1.2-6-4.5-4.2 6.1-.8Z"/></symbol>
+  <symbol id="i-duty" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8.5 7 10 4-1.5 7-5 7-10V6l-7-3Z"/></symbol>
+  <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3.5 5h17l-6.6 7.8v5.9l-3.8 2.2v-8.1Z"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 2h6M10 2v6.7L4.6 18.1a2 2 0 0 0 1.7 3h11.4a2 2 0 0 0 1.7-3L14 8.7V2"/><path d="M7.5 14.5h9"/></symbol>
+
+  <!-- Problem-category glyphs. Drawn on a 24 grid but read at 13px, so every
+       shape is carried by its silhouette: no interior detail survives that size. -->
+  <symbol id="p-onco" viewBox="0 0 24 24"><path d="M12 13.9c-2.5-2.1-3.8-3.9-3.8-5.7a3.8 3.8 0 1 1 7.6 0c0 1.8-1.3 3.6-3.8 5.7Z"/><path d="M10.5 13.1 8.1 20.9l3.9-2.3 3.9 2.3-2.4-7.8"/></symbol>
+  <symbol id="p-tb" viewBox="0 0 24 24"><path d="M12 3.6v6.2"/><path d="M9.4 10.2C9.4 8.4 8.2 7 6.7 7 4.9 7 3.8 8.6 3.8 10.7c0 3.1.4 5.8 1.2 8 .3.9 1.3 1.4 2.2 1.1l1-.3c.8-.3 1.2-1 1.2-1.8v-7.5Z"/><path d="M14.6 10.2c0-1.8 1.2-3.2 2.7-3.2 1.8 0 2.9 1.6 2.9 3.7 0 3.1-.4 5.8-1.2 8-.3.9-1.3 1.4-2.2 1.1l-1-.3c-.8-.3-1.2-1-1.2-1.8v-7.5Z"/><path d="M12 9.8c0-1.3-1.1-2.4-2.6-2.4M12 9.8c0-1.3 1.1-2.4 2.6-2.4"/></symbol>
+  <symbol id="p-cardiac" viewBox="0 0 24 24"><path d="M12 20.4 4.7 13a4.6 4.6 0 0 1 6.5-6.5l.8.8.8-.8A4.6 4.6 0 0 1 19.3 13Z"/></symbol>
+  <symbol id="p-renal" viewBox="0 0 24 24"><path d="M14.4 3.8c2.6 0 4.4 2.7 4.4 6.8 0 4.3-2.3 9-5.7 9-2 0-3.3-1.3-3.3-3 0-1.6 1-2.6 1-4.2 0-1.9-1.4-2.7-1.4-4.5 0-2.6 2.3-4.1 5-4.1Z"/><path d="M9.9 12.4H6.1"/></symbol>
+  <symbol id="p-gi" viewBox="0 0 24 24"><path d="M3.8 8.9c0-1.6 1.1-2.6 2.7-2.6 3.9 0 6.6 1.2 9.7 1.2 2.3 0 4 .7 4 2.6 0 3.5-4.1 7.6-9 7.6-4.4 0-7.4-3.6-7.4-8.8Z"/><path d="M13.4 17.6c.2 1.5 1.2 2.4 2.6 2.4"/></symbol>
+  <symbol id="p-endo" viewBox="0 0 24 24"><path d="M12 3.4 19.4 7.7v8.6L12 20.6 4.6 16.3V7.7Z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+  <symbol id="p-neuro" viewBox="0 0 24 24"><path d="M13.4 2.8 5.2 13.4h6.1l-.9 7.8 8.4-10.9h-6.2Z"/></symbol>
+  <symbol id="p-resp" viewBox="0 0 24 24"><path d="M3.5 8.2h8.9a2.9 2.9 0 1 0-2.9-2.9"/><path d="M2.8 12.4h11.9a2.9 2.9 0 1 1-2.9 2.9"/><path d="M4.6 16.6h5.2a2.4 2.4 0 1 1-2.4 2.4"/></symbol>
+  <symbol id="p-rheum" viewBox="0 0 24 24"><path d="m9 15 6-6"/><path d="M5.9 11.8a2.5 2.5 0 1 0 3.5 3.5"/><path d="M18.1 12.2a2.5 2.5 0 1 1-3.5-3.5"/></symbol>
+  <symbol id="p-heme" viewBox="0 0 24 24"><path d="M12 3.6c3.5 4.2 5.4 7 5.4 9.4a5.4 5.4 0 0 1-10.8 0c0-2.4 1.9-5.2 5.4-9.4Z"/></symbol>
+  <symbol id="p-id" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 7V3.8M12 20.2V17M17 12h3.2M3.8 12H7M15.5 8.5l2.3-2.3M6.2 17.8l2.3-2.3M15.5 15.5l2.3 2.3M6.2 6.2l2.3 2.3"/><circle cx="10.5" cy="11" r=".85" fill="currentColor" stroke="none"/><circle cx="13.4" cy="13.3" r=".85" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="p-psych" viewBox="0 0 24 24"><path d="M12 3.4a7.4 7.4 0 0 0-4.5 13.3c.5.4.8 1 .8 1.6v2.3h7.4v-2.3c0-.6.3-1.2.8-1.6A7.4 7.4 0 0 0 12 3.4Z"/><path d="M9.4 11.2c.9-1.3 1.7-1.3 2.6 0 .9 1.3 1.7 1.3 2.6 0"/></symbol>
+  <symbol id="p-cardiometabolic" viewBox="0 0 24 24"><path d="M4 17.2a8 8 0 1 1 16 0"/><path d="m12 17.2 4.4-4.9"/><circle cx="12" cy="17.2" r="1.3" fill="currentColor" stroke="none"/></symbol><symbol id="p-gyn" viewBox="0 0 24 24"><path d="M12 20.4c-2.1 0-3.3-1.5-3.3-3.5v-4.3h6.6v4.3c0 2-1.2 3.5-3.3 3.5Z"/><path d="M8.7 12.6C7.4 11.2 6 9.7 6 7.7"/><path d="M15.3 12.6c1.3-1.4 2.7-2.9 2.7-4.9"/><circle cx="5.4" cy="5.8" r="1.7"/><circle cx="18.6" cy="5.8" r="1.7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16Z"/><path d="m13.5 6.5 4 4"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.6-4.4L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.6 4.4L20 16"/><path d="M20 20v-4h-4"/></symbol>
+</defs></svg>
+
+<header class="wrap masthead">
+  <div class="masthead-main">
+    <h1>OPD Follow-Up Calendar</h1>
+    <p class="dateline" id="dateline"></p>
+  </div>
+  <div class="mast-actions">
+    <button class="tbtn is-primary edit-only" id="addBtn" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg><span class="lbl">Add patient</span></button>
+    <button class="tbtn" id="schedBtn" type="button"><svg class="i" aria-hidden="true"><use href="#i-cal"/></svg><span class="lbl">Schedule</span></button>
+    <button class="tbtn" id="syncBtn" type="button"><svg class="i" aria-hidden="true"><use href="#i-sync"/></svg><span class="lbl">Sync</span><span class="sdot" aria-hidden="true"></span></button>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-live="polite">
+      <svg class="i" aria-hidden="true"><use href="#i-sun"/></svg>
+      <span id="themeLabel">Light</span>
+    </button>
+  </div>
+</header>
+
+<div class="wrap stats" id="stats"></div>
+
+<div class="wrap controlbar" id="controlbar">
+  <div class="controlbar-inner">
+    <div class="tablist" role="tablist" aria-label="Calendar views" id="tablist">
+      <button class="tab" role="tab" id="tab-calendar"   aria-controls="panel-calendar"   aria-selected="true"  type="button">Calendar <span class="count num" id="c-calendar"></span></button>
+      <button class="tab" role="tab" id="tab-table"      aria-controls="panel-table"      aria-selected="false" tabindex="-1" type="button">Table <span class="count num" id="c-table"></span></button>
+      <button class="tab is-danger" role="tab" id="tab-nawc" aria-controls="panel-nawc"  aria-selected="false" tabindex="-1" type="button">NAWC / No Show <span class="count num" id="c-nawc"></span></button>
+      <button class="tab" role="tab" id="tab-discharged" aria-controls="panel-discharged" aria-selected="false" tabindex="-1" type="button">Discharged / PRN <span class="count num" id="c-discharged"></span></button>
+      <button class="tab" role="tab" id="tab-pendingor"  aria-controls="panel-pendingor"  aria-selected="false" tabindex="-1" type="button">Pending OR <span class="count num" id="c-pendingor"></span></button>
+      <button class="tab" role="tab" id="tab-admitted"   aria-controls="panel-admitted"   aria-selected="false" tabindex="-1" type="button">Admitted <span class="count num" id="c-admitted"></span></button>
+      <button class="tab is-memorial" role="tab" id="tab-mortality" aria-controls="panel-mortality" aria-selected="false" tabindex="-1" type="button">Mortality <span class="count num" id="c-mortality"></span></button>
+    </div>
+
+    <button class="filters-toggle" id="filtersToggle" type="button" aria-expanded="false" aria-controls="filterBank">
+      <svg class="i" aria-hidden="true"><use href="#i-filter"/></svg>
+      <span>Filters</span>
+      <span class="dot" id="filtersDot" hidden aria-hidden="true"></span>
+      <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>
+    </button>
+
+    <div class="filterbank" id="filterBank">
+    <div class="field-wrap searchfield" id="searchField">
+      <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+      <label class="sr-only" for="search">Search patient name</label>
+      <input type="search" id="search" placeholder="Search patient name…" autocomplete="off" spellcheck="false">
+      <button class="clear" id="searchClear" type="button" aria-label="Clear search">
+        <svg class="i" aria-hidden="true"><use href="#i-x"/></svg>
+      </button>
+    </div>
+
+    <label class="sr-only" for="tagFilter">Filter by patient type</label>
+    <select class="select" id="tagFilter"><option value="">All types</option></select>
+    <label class="sr-only" for="probFilter">Filter by problem category</label>
+    <select class="select" id="probFilter"><option value="">All problems</option></select>
+
+    <p class="result-note" id="resultNote" role="status" aria-live="polite"></p>
+
+    <details class="probkey" id="probKey">
+      <summary><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>Problem key</summary>
+      <div class="probkey-grid" id="probKeyGrid"></div>
+      <p class="probkey-note" id="probKeyNote"></p>
+    </details>
+    </div>
+  </div>
+</div>
+
+<main class="wrap" id="main">
+
+  <section class="panel" id="panel-calendar" role="tabpanel" aria-labelledby="tab-calendar" tabindex="0">
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="legend" id="legend">
+      <div class="legend-group">
+        <span class="lbl">Load</span>
+        <span id="legendGauges"></span>
+      </div>
+      <div class="legend-group"><span class="or-key" aria-hidden="true"><i class="or-mark"></i>Name</span><span>For OR</span></div>
+      <div class="legend-group legend-hint"><span>Click a day, then a patient, for the full chart</span></div>
+      <div class="legend-group"><span class="flag f-half"><svg class="i" aria-hidden="true"><use href="#i-half"/></svg>Half-day</span></div>
+      <div class="legend-group"><span class="flag f-duty"><svg class="i" aria-hidden="true"><use href="#i-duty"/></svg>Duty</span></div>
+      <div class="legend-group"><span class="flag f-leave"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg>On leave</span></div>
+      <div class="legend-group"><span class="flag f-holiday"><svg class="i" aria-hidden="true"><use href="#i-star"/></svg><span class="nm">Holiday</span></span><span>Regular</span></div>
+      <div class="legend-group"><span class="flag f-holiday is-special"><svg class="i" aria-hidden="true"><use href="#i-star"/></svg><span class="nm">Holiday</span></span><span>Special non-working</span></div>
+      <div class="legend-group"><span class="flag f-holiday is-tent"><svg class="i" aria-hidden="true"><use href="#i-star"/></svg><span class="nm">Holiday</span></span><span>Dashed &mdash; 2027 proclamation pending</span></div>
+      <div class="legend-group"><span class="flag f-clash"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Booked during leave / on a holiday</span></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-table" role="tabpanel" aria-labelledby="tab-table" tabindex="0" hidden>
+    <p class="panel-intro">Assessment and pending-test snippets come from each patient's latest Obsidian chart note, so they only appear for patients with a note on file. Click a month to expand, a column header to sort, or any row for the full text.</p>
+
+    <div class="section">
+      <h2 class="section-head">Upcoming Follow-Ups <span class="n" id="upcomingCount"></span></h2>
+      <div id="upcomingGroups"></div>
+      <div class="empty" id="upcomingEmpty" hidden><svg class="i" aria-hidden="true"><use href="#i-inbox"/></svg>No upcoming patients match your filters.</div>
+    </div>
+
+    <details class="section fold" id="pendingLabsFold">
+      <summary class="section-head is-caution"><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg><svg class="i" aria-hidden="true"><use href="#i-flask"/></svg>&nbsp;Pending Labs <span class="n" id="pendingLabsCount"></span></summary>
+      <div class="tscroll" tabindex="0" role="region" aria-label="Patients following up once, pending labs">
+        <table class="data" id="pendingLabsTable">
+          <thead><tr>
+            <th data-sort="name" data-div="labs"></th>
+            <th data-sort="cn"   data-div="labs"></th>
+            <th data-sort="date" data-div="labs"></th>
+            <th data-sort="tag"  data-div="labs"></th>
+            <th><span class="th-label">Assessment</span></th>
+            <th><span class="th-label">Pending tests</span></th>
+          </tr></thead>
+          <tbody id="pendingLabsBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="pendingLabsEmpty" hidden><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>No patients waiting on labs before their next visit.</div>
+    </details>
+
+    <details class="section fold" id="overdueFold">
+      <summary class="section-head is-danger"><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>Overdue / NAWC <span class="n" id="overdueCount"></span></summary>
+      <div class="tscroll" tabindex="0" role="region" aria-label="Overdue patients">
+        <table class="data" id="overdueTable">
+          <thead><tr>
+            <th data-sort="name" data-div="overdue"></th>
+            <th data-sort="cn"   data-div="overdue"></th>
+            <th data-sort="date" data-div="overdue"></th>
+            <th data-sort="tag"  data-div="overdue"></th>
+            <th><span class="th-label">Assessment</span></th>
+            <th><span class="th-label">Pending tests</span></th>
+          </tr></thead>
+          <tbody id="overdueBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="overdueEmpty" hidden><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>No overdue patients.</div>
+    </details>
+  </section>
+
+  <section class="panel" id="panel-nawc" role="tabpanel" aria-labelledby="tab-nawc" tabindex="0" hidden>
+    <p class="panel-intro">Patients whose scheduled follow-up date has passed. <strong>Mark reviewed</strong> <span id="reviewPersistence"></span></p>
+    <div id="nawcTiers"></div>
+    <div class="empty" id="nawcEmpty" hidden><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>No patients match your filters.</div>
+  </section>
+
+  <section class="panel" id="panel-discharged" role="tabpanel" aria-labelledby="tab-discharged" tabindex="0" hidden>
+    <p class="panel-intro">Patients flagged <strong>DISCHARGED</strong> or <strong>follow up as needed (PRN)</strong> in their chart Remarks — pulled out of the active calendar since they're not on a fixed schedule.</p>
+    <div class="tscroll" tabindex="0" role="region" aria-label="Discharged and PRN patients">
+      <table class="data" id="dischargedTable">
+        <thead><tr>
+          <th data-sort="name"   data-div="discharged"></th>
+          <th data-sort="cn"     data-div="discharged"></th>
+          <th data-sort="reason" data-div="discharged"></th>
+          <th><span class="th-label">Note</span></th>
+          <th data-sort="source" data-div="discharged"></th>
+        </tr></thead>
+        <tbody id="dischargedBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="dischargedEmpty" hidden><svg class="i" aria-hidden="true"><use href="#i-inbox"/></svg>No discharged or PRN patients match your search.</div>
+  </section>
+
+  <section class="panel" id="panel-pendingor" role="tabpanel" aria-labelledby="tab-pendingor" tabindex="0" hidden>
+    <p class="panel-intro">Patients with a documented surgical plan that hasn't happened yet, pulled from chart Remarks and notes. Follow-Up shows a fixed date when one is set in Obsidian; a <span class="pill tent">~date</span> is a placeholder (today + 3 months) for patients with no date yet — tracked here only, never added to the Calendar tab.</p>
+    <div class="tscroll" tabindex="0" role="region" aria-label="Patients pending OR">
+      <table class="data" id="pendingOrTable">
+        <thead><tr>
+          <th data-sort="name" data-div="pendingor"></th>
+          <th data-sort="cn"   data-div="pendingor"></th>
+          <th><span class="th-label">OR plan</span></th>
+          <th><span class="th-label">Clearance status</span></th>
+          <th data-sort="date"   data-div="pendingor"></th>
+          <th data-sort="source" data-div="pendingor"></th>
+        </tr></thead>
+        <tbody id="pendingOrBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="pendingOrEmpty" hidden><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>No patients pending OR.</div>
+  </section>
+
+  <section class="panel" id="panel-admitted" role="tabpanel" aria-labelledby="tab-admitted" tabindex="0" hidden>
+    <p class="panel-intro">Patients on the OPD list who are <strong>currently admitted</strong> — flagged <code>Status: [[ADMITTED]]</code> in Obsidian. Their follow-up date is only set at discharge, so they are held here instead of sitting on the calendar under a stale date or on NAWC as a no-show. <strong>Last charted</strong> is the most recent entry in their note. Click any row for the assessment on file.</p>
+    <div class="tscroll" tabindex="0" role="region" aria-label="Currently admitted patients">
+      <table class="data" id="admittedTable">
+        <thead><tr>
+          <th data-sort="name"      data-div="admitted"></th>
+          <th data-sort="cn"        data-div="admitted"></th>
+          <th data-sort="last_seen" data-div="admitted"></th>
+          <th data-sort="date"      data-div="admitted"></th>
+          <th><span class="th-label">Note</span></th>
+          <th data-sort="source"    data-div="admitted"></th>
+        </tr></thead>
+        <tbody id="admittedBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="admittedEmpty" hidden><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>No patients are currently admitted.</div>
+  </section>
+
+  <section class="panel" id="panel-mortality" role="tabpanel" aria-labelledby="tab-mortality" tabindex="0" hidden>
+    <p class="panel-intro">Patients who have died. Kept here rather than deleted so the record stays intact — they are excluded from the calendar, the follow-up counts and the NAWC list. <strong>Date</strong> is the date of death where the chart records one. Click any row for the last assessment on file.</p>
+    <div class="tscroll" tabindex="0" role="region" aria-label="Deceased patients">
+      <table class="data" id="mortalityTable">
+        <thead><tr>
+          <th data-sort="name"   data-div="mortality"></th>
+          <th data-sort="cn"     data-div="mortality"></th>
+          <th data-sort="date"   data-div="mortality"></th>
+          <th><span class="th-label">Note</span></th>
+          <th data-sort="source" data-div="mortality"></th>
+        </tr></thead>
+        <tbody id="mortalityBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="mortalityEmpty" hidden><svg class="i" aria-hidden="true"><use href="#i-inbox"/></svg>No patients match your search.</div>
+  </section>
+
+</main>
+
+<div class="scrim" id="dayScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dayTitle">
+    <div class="sheet-head">
+      <h3 id="dayTitle"></h3>
+      <p class="sub" id="daySub"></p>
+      <button class="sheet-close" type="button" data-close aria-label="Close">
+        <svg class="i" aria-hidden="true"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body"><ul class="roster-list" id="dayList"></ul></div>
+    <div class="sheet-foot" id="dayActions"></div>
+  </div>
+</div>
+
+<div class="scrim" id="detailScrim">
+  <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="sheet-head">
+      <h3 id="detailTitle"></h3>
+      <p class="sub" id="detailSub"></p>
+      <button class="sheet-close" type="button" data-close aria-label="Close">
+        <svg class="i" aria-hidden="true"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="fieldblock" id="detailNoteBlock" hidden><div class="k">Note</div><div class="v" id="detailNote"></div></div>
+      <div class="fieldblock" id="detailOrBlock" hidden>
+        <div class="k"><i class="or-mark"></i>For OR</div>
+        <div class="v" id="detailOrPlan"></div>
+        <div class="v sub-v" id="detailOrStatus"></div>
+      </div>
+      <div class="fieldblock" id="detailProbBlock" hidden><div class="k">Problems</div><div class="v" id="detailProb"></div></div>
+      <div class="fieldblock" id="detailAssessmentBlock"><div class="k" id="detailAssessmentKey">Assessment</div><div class="v" id="detailAssessment"></div></div>
+      <div class="fieldblock" id="detailTestsBlock"><div class="k">Pending tests</div><div class="v" id="detailTests"></div></div>
+    </div>
+    <div class="sheet-foot" id="detailActions"></div>
+  </div>
+</div>
+
+<div class="scrim" id="editScrim">
+  <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="sheet-head">
+      <h3 id="editTitle"></h3>
+      <p class="sub" id="editSub"></p>
+      <button class="sheet-close" type="button" data-close aria-label="Close">
+        <svg class="i" aria-hidden="true"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body"><form class="form" id="editForm" novalidate></form></div>
+    <div class="sheet-foot" id="editActions"></div>
+  </div>
+</div>
+
+<div class="scrim" id="schedScrim">
+  <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="schedTitle">
+    <div class="sheet-head">
+      <h3 id="schedTitle">Schedule</h3>
+      <p class="sub">Leave, half-days, duty days and holidays — what marks the calendar besides patients</p>
+      <button class="sheet-close" type="button" data-close aria-label="Close">
+        <svg class="i" aria-hidden="true"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body" id="schedBody"></div>
+  </div>
+</div>
+
+<div class="scrim" id="syncScrim">
+  <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="syncTitle">
+    <div class="sheet-head">
+      <h3 id="syncTitle">GitHub sync</h3>
+      <p class="sub">Patients live in a private repo — never in this page</p>
+      <button class="sheet-close" type="button" data-close aria-label="Close">
+        <svg class="i" aria-hidden="true"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p class="hint" id="syncStatus" role="status" aria-live="polite"></p>
+      <form class="form" id="syncForm" autocomplete="off" style="margin-top:var(--s4)">
+        <label class="fl"><span>Owner</span><input class="in" name="owner" autocapitalize="off" spellcheck="false"></label>
+        <label class="fl"><span>Private repo</span><input class="in" name="repo" autocapitalize="off" spellcheck="false"></label>
+        <label class="fl"><span>File</span><input class="in" name="path" autocapitalize="off" spellcheck="false"></label>
+        <label class="fl"><span>Branch</span><input class="in" name="branch" autocapitalize="off" spellcheck="false"></label>
+        <label class="fl full"><span>Access token</span><input class="in num" name="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…"></label>
+        <div class="hint full">
+          One token per device, pasted once. Make it at
+          <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained tokens</a>:
+          <b>Repository access</b> → only <code>opd-calendar-data</code>; <b>Permissions</b> → Contents: <b>Read and write</b>.
+          It is kept in this device's storage and sent only to api.github.com. Revoke it on GitHub if a phone is lost.
+        </div>
+        <div class="full" style="display:flex;flex-wrap:wrap;gap:var(--s2)">
+          <button class="tbtn is-primary" type="submit"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span class="lbl">Save &amp; sync</span></button>
+          <button class="tbtn" type="button" id="syncNow"><svg class="i" aria-hidden="true"><use href="#i-sync"/></svg><span class="lbl">Sync now</span></button>
+          <button class="tbtn" type="button" id="syncDiscard" hidden><span class="lbl">Discard unsaved edits</span></button>
+          <span style="flex:1 1 auto"></span>
+          <button class="tbtn is-danger" type="button" id="syncForget" hidden><span class="lbl">Disconnect this device</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- The vault copy fills this with the data as `const NAME = [...];` lines.
+     In the published app it stays empty: data comes from the private repo. -->
+<script type="text/x-opd-data" id="opd-data"></script>
+
+<script>
+/* ============================================================
+   DATA — empty here on purpose. It arrives at boot from the private GitHub
+   repo, this device's cache, or (vault copy only) the inline snapshot above.
+   ============================================================ */
+let ALL_PATIENTS = [], DISCHARGED_PRN = [], MORTALITY = [], PENDING_OR = [], ADMITTED = [];
+let LEAVE_RANGES = [], HOLIDAYS = [], HALF_DAYS = [], DUTY_DAYS = [];
+/* the device's own date, not the date of the last resync */
+const TODAY = (d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" +
+  String(d.getDate()).padStart(2, "0"))(new Date());
+const TAG_LABELS = {"CONT": "Continuity", "CO-MGMT": "Co-management", "CONT / ADM": "Continuity (Admitted)", "TC": "Transfer of Care", "OBS": "Obsidian only"};
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+/* Files opened straight from disk have a "null" origin, and Chrome throws
+   SecurityError on localStorage there. Probe once; degrade honestly. */
+const STORAGE_OK = (() => {
+  try { localStorage.setItem("__opd_probe", "1"); localStorage.removeItem("__opd_probe"); return true; }
+  catch (e) { return false; }
+})();
+function store(key, fallback) {
+  if (!STORAGE_OK) return fallback;
+  try { const v = localStorage.getItem(key); return v === null ? fallback : v; }
+  catch (e) { return fallback; }
+}
+function put(key, val) {
+  if (!STORAGE_OK) return;
+  try { localStorage.setItem(key, val); } catch (e) {}
+}
+
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MON    = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DOW    = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const DOW_LONG = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+function parseISO(iso) { return new Date(iso + "T00:00:00"); }
+/* A sync can hand us a non-date in the date slot (a blank "Follow Up:" in
+   Obsidian once let the next frontmatter line through). Anything that is not
+   a plain ISO day is treated as "no date" so one bad row cannot blank a tab. */
+const isISO = d => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d);
+function daysBetween(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+const THIS_YEAR = parseISO(TODAY).getFullYear();
+
+/** "Thu · Aug 20", with the year appended only when it isn't the current one. */
+function fmtDate(iso) {
+  if (!iso) return "—";
+  const d = parseISO(iso);
+  if (isNaN(d)) return esc(iso);
+  const y = d.getFullYear();
+  return DOW[d.getDay()] + " · " + MON[d.getMonth()] + " " + d.getDate() + (y === THIS_YEAR ? "" : ", " + y);
+}
+function fmtLong(iso) {
+  const d = parseISO(iso);
+  return DOW_LONG[d.getDay()] + ", " + MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+}
+function dateCell(iso, extra) {
+  if (!iso) return '<td class="cell-date">—</td>';
+  return '<td class="cell-date" title="' + esc(iso) + '"><span class="date-main">' + fmtDate(iso) + "</span>" + (extra || "") + "</td>";
+}
+function tagPill(tag) { return '<span class="pill tag">' + esc(TAG_LABELS[tag] || tag || "—") + "</span>"; }
+
+/* Problem categories. PROBLEM_ORDER is the priority order that p.problems is
+   stored in — rarest / most care-driving first, cardiometabolic last — so the
+   glyphs a row shows are the top of that order, not whatever the classifier
+   happened to emit first. */
+const PROBLEM_LABELS = {
+  onco: "Oncology", tb: "TB", cardiac: "Cardiac", renal: "Renal",
+  gi: "GI / Hepatobiliary", endo: "Endocrine", neuro: "Neuro",
+  resp: "Respiratory", rheum: "Rheum / MSK", heme: "Heme",
+  id: "Infectious", psych: "Psych", cardiometabolic: "Cardiometabolic",
+  gyn: "Gynecologic"
+};
+const PROBLEM_ORDER = ["onco","tb","cardiac","renal","gyn","gi","endo","neuro","resp","rheum","heme","id","psych","cardiometabolic"];
+const PROBLEM_ICONS = {
+  onco: "p-onco", tb: "p-tb", cardiac: "p-cardiac", renal: "p-renal",
+  gi: "p-gi", endo: "p-endo", neuro: "p-neuro", resp: "p-resp",
+  rheum: "p-rheum", heme: "p-heme", id: "p-id", psych: "p-psych",
+  cardiometabolic: "p-cardiometabolic", gyn: "p-gyn"
+};
+
+/* Cardiometabolic is ambient: 207 of 295 patients carry it, so a glyph on every
+   row would be wallpaper. It still filters, still searches, still shows in the
+   tooltip and the detail sheet — it only takes a glyph when it is the ONLY
+   thing a patient has, which is the one case where it means something. */
+const PROBLEM_AMBIENT = { cardiometabolic: 1 };
+const PROB_GLYPH_MAX = 3;
+
+/* The categories that earn a glyph, in priority order. */
+function problemStrip(p) {
+  const all = (p && p.problems) || [];
+  if (!all.length) return [];
+  const lead = all.filter(k => !PROBLEM_AMBIENT[k]);
+  return lead.length ? lead : all;
+}
+function problemGlyphs(p) {
+  const strip = problemStrip(p);
+  if (!strip.length) return "";
+  const shown = strip.slice(0, PROB_GLYPH_MAX);
+  /* +n counts only the categories that were crowded out, never the ambient one
+     that was set aside on purpose — otherwise "+1" would sit on most of the list. */
+  const more = strip.length - shown.length;
+  const title = p.problems.map(x => PROBLEM_LABELS[x] || x).join(", ");
+  return ' <span class="probs" title="' + esc(title) + '">' +
+    '<span class="sr-only">Problems: ' + esc(title) + '. </span>' +
+    shown.map(k => '<svg class="i" aria-hidden="true"><use href="#' + PROBLEM_ICONS[k] + '"/></svg>').join("") +
+    (more > 0 ? '<span class="more num" aria-hidden="true">+' + more + "</span>" : "") +
+    "</span>";
+}
+
+/* "For OR" is two sources agreeing: the chart's own surgical flag, and a live
+   row on the Pending OR list matched by case number. Either one counts. */
+const OR_BY_CN = {};
+function rebuildIndexes() {
+  Object.keys(OR_BY_CN).forEach(k => delete OR_BY_CN[k]);
+  PENDING_OR.forEach(o => { if (o.cn) OR_BY_CN[o.cn] = o; });
+}
+function orInfo(p) { return (p && p.cn && OR_BY_CN[p.cn]) || null; }
+function isForOR(p) { return !!(p && (p.postop || orInfo(p))); }
+function orPill(p) {
+  return isForOR(p) ? ' <span class="pill or"><i class="or-mark"></i>For OR</span>' : "";
+}
+/* Pending labs: a patient booked for one more visit with no date yet because
+   it's keyed to results coming back, not the calendar. Same per-patient badge
+   pattern as For OR, distinct accent (caution, not flag) so the two never read
+   as the same kind of "pending." */
+function isPendingLabs(p) { return !!(p && p.pending_labs); }
+function labsPill(p) {
+  return isPendingLabs(p) ? ' <span class="pill labs"><svg class="i" aria-hidden="true"><use href="#i-flask"/></svg>Pending Labs</span>' : "";
+}
+function snip(text, len, blank) {
+  if (!text) return '<span class="none">' + (blank || "—") + "</span>";
+  const t = String(text).replace(/\s+/g, " ").trim();
+  return '<span class="txt">' + esc(t.slice(0, len)) + (t.length > len ? "…" : "") + "</span>";
+}
+
+function halfDayFor(dateKey) { return HALF_DAYS.find(h => h.date === dateKey) || null; }
+function leaveRangeFor(dateKey) { return LEAVE_RANGES.find(r => dateKey >= r.start && dateKey <= r.end) || null; }
+function holidayFor(dateKey) { return HOLIDAYS.find(h => h.date === dateKey) || null; }
+function dutyFor(dateKey) { return DUTY_DAYS.find(d => d.date === dateKey) || null; }
+function holidayTitle(h) {
+  return h.name + " — " + (h.type === "regular" ? "regular holiday" : "special non-working day") +
+    (h.tent ? " (expected; the " + h.date.slice(0, 4) + " proclamation is not out yet)" : "");
+}
+
+/** Load reads as a count of filled segments, so it survives greyscale and
+    colour-blindness without a second encoding. */
+function loadGauge(n, max) {
+  /* Segment count tracks the busiest day so the mapping stays 1:1 while it can
+     — a fixed 5 would render 5 and 6 patients identically. Caps at 8 for width. */
+  const segs = Math.min(8, Math.max(3, max));
+  const on = Math.max(1, Math.min(segs, Math.round(segs * n / Math.max(1, max))));
+  let g = "";
+  for (let i = 0; i < segs; i++) g += "<i" + (i < on ? ' class="on"' : "") + "></i>";
+  return '<span class="load"><span class="gauge" aria-hidden="true">' + g +
+         '</span><span class="ct">' + n + "</span></span>";
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  search: "",
+  tag: "",
+  prob: "",
+  reviewed: new Set(JSON.parse(store("opd.reviewed", "[]"))),
+  sortKey: { overdue: "date", upcoming: "date", nawc: "date", discharged: "name", pendingor: "date", admitted: "name", mortality: "name", labs: "name" },
+  sortDir: { overdue: 1,      upcoming: 1,      nawc: 1,      discharged: 1,      pendingor: 1,      admitted: 1,      mortality: 1,      labs: 1 }
+};
+function persistReviewed() { put("opd.reviewed", JSON.stringify(Array.from(state.reviewed))); }
+
+const SORT_LABELS = {
+  _default:  { name: "Patient", cn: "CN", date: "Date", tag: "Type", reason: "Reason", source: "Source" },
+  overdue:   { date: "Follow-up" },
+  nawc:      { date: "Scheduled follow-up" },
+  pendingor: { date: "Follow-up" },
+  admitted:  { last_seen: "Last charted", date: "Booked follow-up" },
+  mortality: { date: "Date of death" }
+};
+
+function filteredPatients() {
+  const q = state.search.toLowerCase();
+  return ALL_PATIENTS.filter(p =>
+    (!q || p.name.toLowerCase().includes(q)) &&
+    (!state.tag || p.tag === state.tag) &&
+    /* match against the FULL category list, not just the displayed badge, so
+       filtering for TB still finds a patient whose badge reads Oncology */
+    (!state.prob || (state.prob === "__none"
+      ? !(p.problems || []).length
+      : (p.problems || []).indexOf(state.prob) !== -1)));
+}
+function matchesSearch(p) {
+  return !state.search || p.name.toLowerCase().includes(state.search.toLowerCase());
+}
+
+/* ============================================================
+   THEME
+   ============================================================ */
+const root = document.documentElement;
+const themeBtn = $("#themeToggle"), themeLabel = $("#themeLabel");
+function applyTheme(mode) {
+  root.setAttribute("data-theme", mode);
+  const dark = mode === "dark" ||
+    (mode === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  themeLabel.textContent = dark ? "Dark" : "Light";
+  $("use", themeBtn).setAttribute("href", dark ? "#i-moon" : "#i-sun");
+  themeBtn.setAttribute("aria-label", "Theme: " + (mode === "auto" ? "system" : mode) + ". Activate to change.");
+  themeBtn.title = "Theme: " + (mode === "auto" ? "follows system" : mode);
+}
+let themeMode = store("opd.theme", "auto");
+themeBtn.addEventListener("click", () => {
+  const order = ["auto", "light", "dark"];
+  themeMode = order[(order.indexOf(themeMode) + 1) % order.length];
+  put("opd.theme", themeMode);
+  applyTheme(themeMode);
+});
+window.matchMedia("(prefers-color-scheme: dark)")
+  .addEventListener("change", () => { if (themeMode === "auto") applyTheme("auto"); });
+applyTheme(themeMode);
+
+/* ============================================================
+   DIALOGS — Esc, focus trap, focus return
+   ============================================================ */
+function focusables(el) {
+  return $$('a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])', el)
+    .filter(n => n.offsetParent !== null);
+}
+/* Sheets stack: a day opens, a patient inside it opens on top. The stack keeps
+   Esc, the focus trap and focus-return pointed at whichever is actually on top. */
+const dialogStack = [];
+function openDialog(scrim, trigger) {
+  const i = dialogStack.indexOf(scrim);
+  if (i > -1) dialogStack.splice(i, 1);
+  scrim.__trigger = trigger || document.activeElement;
+  scrim.classList.add("open");
+  scrim.classList.toggle("is-stacked", dialogStack.length > 0);
+  dialogStack.push(scrim);
+  document.body.style.overflow = "hidden";
+  const sheet = $(".sheet", scrim);
+  sheet.tabIndex = -1;
+  (focusables(scrim)[0] || sheet).focus();
+}
+function closeDialog(scrim) {
+  const i = dialogStack.indexOf(scrim);
+  if (i > -1) dialogStack.splice(i, 1);
+  scrim.classList.remove("open", "is-stacked");
+  if (!dialogStack.length) document.body.style.overflow = "";
+  const t = scrim.__trigger;
+  if (t && document.contains(t) && t.offsetParent !== null) t.focus();
+  else if (dialogStack.length) $(".sheet", dialogStack[dialogStack.length - 1]).focus();
+}
+$$(".scrim").forEach(scrim => {
+  scrim.addEventListener("click", e => { if (e.target === scrim) closeDialog(scrim); });
+  $$("[data-close]", scrim).forEach(b => b.addEventListener("click", () => closeDialog(scrim)));
+});
+document.addEventListener("keydown", e => {
+  const open = dialogStack[dialogStack.length - 1];
+  if (!open) return;
+  if (e.key === "Escape") { e.preventDefault(); closeDialog(open); return; }
+  if (e.key !== "Tab") return;
+  const f = focusables(open);
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
+
+/* ============================================================
+   TABS
+   ============================================================ */
+const tablist = $("#tablist");
+function selectTab(tab) {
+  $$('[role="tab"]', tablist).forEach(t => {
+    const on = t === tab;
+    t.setAttribute("aria-selected", String(on));
+    t.tabIndex = on ? 0 : -1;
+    $("#" + t.getAttribute("aria-controls")).hidden = !on;
+  });
+  put("opd.tab", tab.id);
+  revealTab(tab);
+}
+tablist.addEventListener("click", e => {
+  const tab = e.target.closest('[role="tab"]');
+  if (tab) selectTab(tab);
+});
+tablist.addEventListener("keydown", e => {
+  const tabs = $$('[role="tab"]', tablist);
+  const i = tabs.indexOf(document.activeElement);
+  if (i < 0) return;
+  const map = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 };
+  if (!(e.key in map)) return;
+  e.preventDefault();
+  const j = (map[e.key] + tabs.length) % tabs.length;
+  selectTab(tabs[j]);
+  tabs[j].focus();
+});
+
+/* sticky bar shadow.
+   The IntersectionObserver version of this never fired: with top:0 the bar is
+   always fully in view, so intersectionRatio stayed 1 and the rule under the
+   bar never appeared. Sticky pins rect.top to exactly 0, so read that. */
+const bar = $("#controlbar");
+function syncBarStuck() {
+  bar.classList.toggle("is-stuck", bar.getBoundingClientRect().top <= 0);
+}
+addEventListener("scroll", syncBarStuck, { passive: true });
+addEventListener("resize", syncBarStuck);
+syncBarStuck();
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+function renderDateline() {
+  /* past leave stays in the data (the calendar still marks those days) but
+     drops out of the header once it is over */
+  const leave = LEAVE_RANGES.filter(r => isISO(r.end) && r.end >= TODAY).map(r => {
+    const a = parseISO(r.start), b = parseISO(r.end);
+    const span = a.getMonth() === b.getMonth()
+      ? MON[a.getMonth()] + " " + a.getDate() + "–" + b.getDate()
+      : MON[a.getMonth()] + " " + a.getDate() + " – " + MON[b.getMonth()] + " " + b.getDate();
+    return '<span class="leave-flag"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg>On leave ' +
+      esc(span) + ", " + b.getFullYear() + "</span>";
+  }).join("");
+  $("#dateline").innerHTML =
+    '<span id="syncLine"></span>' +
+    '<span class="sep" aria-hidden="true">•</span>' +
+    "<span>Today is <strong>" + fmtLong(TODAY) + "</strong></span>" +
+    (leave ? '<span class="sep" aria-hidden="true">•</span>' + leave : "");
+  renderSyncLine();
+}
+
+function renderStats() {
+  const upcoming = ALL_PATIENTS.filter(p => isISO(p.date) && p.date >= TODAY);
+  const overdue  = ALL_PATIENTS.filter(p => p.date <  TODAY);
+  const byDate = {};
+  upcoming.forEach(p => { byDate[p.date] = (byDate[p.date] || 0) + 1; });
+  let bDate = null, bN = 0;
+  Object.keys(byDate).forEach(d => { if (byDate[d] > bN) { bN = byDate[d]; bDate = d; } });
+
+  $("#stats").innerHTML =
+    stat("Total patients", ALL_PATIENTS.length, "on the list") +
+    stat("Upcoming", upcoming.length, "follow-ups booked") +
+    stat("Overdue", overdue.length, "NAWC / no show", true) +
+    stat("Busiest day", bDate ? bN : "—", bDate ? fmtDate(bDate) : "no upcoming days");
+
+  $("#c-calendar").textContent   = upcoming.length;
+  $("#c-table").textContent      = ALL_PATIENTS.length;
+  $("#c-nawc").textContent       = overdue.length;
+  $("#c-discharged").textContent = DISCHARGED_PRN.length;
+  $("#c-pendingor").textContent  = PENDING_OR.length;
+  $("#c-admitted").textContent   = ADMITTED.length;
+  $("#c-mortality").textContent  = MORTALITY.length;
+}
+function stat(k, v, sub, warn) {
+  return '<div class="stat' + (warn ? " is-warn" : "") + '"><div class="k">' + esc(k) +
+    '</div><div class="v num">' + esc(v) + '</div><div class="sub">' + esc(sub) + "</div></div>";
+}
+
+function renderResultNote() {
+  const n = filteredPatients().length, total = ALL_PATIENTS.length;
+  $("#resultNote").innerHTML = (state.search || state.tag || state.prob)
+    ? "Showing <strong>" + n + "</strong> of <strong>" + total + "</strong>"
+    : "<strong>" + total + "</strong> patients";
+}
+
+function populateTagFilter() {
+  const sel = $("#tagFilter");
+  sel.length = 1;   /* rebuilt on every data change, so start from "All" */
+  Array.from(new Set(ALL_PATIENTS.map(p => p.tag))).sort().forEach(t => {
+    const o = document.createElement("option");
+    o.value = t;
+    o.textContent = TAG_LABELS[t] || t;
+    sel.appendChild(o);
+  });
+
+  /* Category options are counted over the whole active list and ordered by
+     taxonomy priority, not alphabetically, so the list reads the same way the
+     badges do. Counts use the full problems array, matching the filter. */
+  const psel = $("#probFilter");
+  psel.length = 1;
+  const counts = {};
+  ALL_PATIENTS.forEach(p => (p.problems || []).forEach(k => { counts[k] = (counts[k] || 0) + 1; }));
+  PROBLEM_ORDER.filter(k => counts[k]).forEach(k => {
+    const o = document.createElement("option");
+    o.value = k;
+    o.textContent = (PROBLEM_LABELS[k] || k) + " (" + counts[k] + ")";
+    psel.appendChild(o);
+  });
+  const none = ALL_PATIENTS.filter(p => !(p.problems || []).length).length;
+  if (none) {
+    const o = document.createElement("option");
+    o.value = "__none";
+    o.textContent = "Uncategorized (" + none + ")";
+    psel.appendChild(o);
+  }
+  renderProblemKey(counts);
+  /* keep a live filter selected across a refresh; drop it if its option is gone */
+  sel.value = state.tag; if (sel.value !== state.tag) state.tag = "";
+  psel.value = state.prob; if (psel.value !== state.prob) state.prob = "";
+}
+
+/* The glyphs are only readable if there is one place that spells them out.
+   Same order as the filter, same counts, so the two read as one control. */
+function renderProblemKey(counts) {
+  const keys = PROBLEM_ORDER.filter(k => counts[k]);
+  $("#probKeyGrid").innerHTML = keys.map(k =>
+    '<span><svg class="i" aria-hidden="true"><use href="#' + PROBLEM_ICONS[k] + '"/></svg>' +
+    esc(PROBLEM_LABELS[k]) + '<em class="num">' + counts[k] + "</em></span>"
+  ).join("");
+  const amb = keys.filter(k => PROBLEM_AMBIENT[k]);
+  $("#probKeyNote").textContent = amb.length
+    ? amb.map(k => PROBLEM_LABELS[k] + " (" + counts[k] + " of " + ALL_PATIENTS.length + ")").join(", ") +
+      " is too common to mark on every row, so it only takes a glyph when it is a patient's only category. Filtering and search still cover all of them."
+    : "";
+}
+
+/* ============================================================
+   CALENDAR
+   ============================================================ */
+function renderCalendar() {
+  const shown = filteredPatients().filter(p => isISO(p.date) && p.date >= TODAY);
+  const byDate = {};
+  shown.forEach(p => { (byDate[p.date] = byDate[p.date] || []).push(p); });
+
+  const maxCount = Math.max(1, ...Object.keys(byDate).map(d => byDate[d].length));
+  const grid = $("#calGrid");
+
+  const spanDates = ALL_PATIENTS.filter(p => isISO(p.date) && p.date >= TODAY).map(p => p.date).sort();
+  if (!spanDates.length) {
+    grid.innerHTML = '<div class="empty"><svg class="i" aria-hidden="true"><use href="#i-inbox"/></svg>No upcoming follow-ups on file.</div>';
+    return;
+  }
+
+  const first = parseISO(spanDates[0]), last = parseISO(spanDates[spanDates.length - 1]);
+  const today = parseISO(TODAY);
+  const from  = today < first ? today : first;
+
+  const months = [];
+  let y = from.getFullYear(), m = from.getMonth();
+  while (y < last.getFullYear() || (y === last.getFullYear() && m <= last.getMonth())) {
+    months.push([y, m]);
+    if (++m > 11) { m = 0; y++; }
+  }
+
+  grid.innerHTML = months.map(([yy, mm]) => {
+    const offset = new Date(yy, mm, 1).getDay();
+    const total  = new Date(yy, mm + 1, 0).getDate();
+    let monthTotal = 0, cells = [];
+
+    for (let k = 0; k < offset; k++) cells.push('<td class="pad"></td>');
+    for (let d = 1; d <= total; d++) {
+      const key = yy + "-" + String(mm + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+      const list = byDate[key] || [];
+      monthTotal += list.length;
+      cells.push("<td>" + dayCell(key, d, list, maxCount) + "</td>");
+    }
+    while (cells.length % 7) cells.push('<td class="pad"></td>');
+
+    let rows = "";
+    for (let i = 0; i < cells.length; i += 7) rows += "<tr>" + cells.slice(i, i + 7).join("") + "</tr>";
+
+    return '<div class="month"><h2>' + MONTHS[mm] + " " + yy +
+      '<span class="mcount num">' + monthTotal + (monthTotal === 1 ? " patient" : " patients") + "</span></h2>" +
+      '<table class="cal"><thead><tr>' + DOW.map(d => '<th scope="col"><abbr title="' + DOW_LONG[DOW.indexOf(d)] + '">' + d + "</abbr></th>").join("") +
+      "</tr></thead><tbody>" + rows + "</tbody></table></div>";
+  }).join("");
+
+  $$("button.day", grid).forEach(btn => {
+    btn.addEventListener("click", () => openDay(btn.dataset.date, byDate[btn.dataset.date], btn));
+  });
+
+  const marks = [1, Math.max(2, Math.round(maxCount * .6)), maxCount];
+  $("#legendGauges").innerHTML = marks.map(v => loadGauge(v, maxCount)).join("");
+}
+
+function dayCell(key, d, list, maxCount) {
+  const n     = list.length;
+  const leave = leaveRangeFor(key);
+  const hol   = holidayFor(key);
+  const half  = halfDayFor(key);
+  const duty  = dutyFor(key);
+  const isToday = key === TODAY;
+  const clash = leave && n > 0;
+  /* a booking on a holiday is a real conflict — the clinic is closed — but
+     only a regular holiday closes it outright; special non-working days are
+     often still worked, so those stay informational. */
+  const hclash = !clash && hol && hol.type === "regular" && n > 0;
+
+  const cls = ["day"];
+  if (n) cls.push("has-pts");
+  if (isToday) cls.push("is-today");
+  if (hol) cls.push("is-holiday");
+  if (leave) cls.push("is-leave");
+  if (clash) cls.push("is-clash");
+  if (hclash) cls.push("is-hclash");
+  if (duty) cls.push("is-duty");
+
+  /* Today is the inverted numeral, not a coloured flag — it reads louder and
+     leaves the palette free for things that actually need attention. */
+  const top =
+    '<div class="day-top"><span class="daynum">' + d + "</span>" +
+    (n ? loadGauge(n, maxCount) : "") + "</div>";
+
+  const marks = [];
+  if (clash)   marks.push('<span class="flag f-clash"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>On leave</span>');
+  else if (leave) marks.push('<span class="flag f-leave"><svg class="i" aria-hidden="true"><use href="#i-plane"/></svg>On leave</span>');
+  if (hol) {
+    const hcls = "flag " + (hclash ? "f-clash" : "f-holiday" +
+      (hol.type === "special" ? " is-special" : "") + (hol.tent ? " is-tent" : ""));
+    marks.push('<span class="' + hcls + '" title="' + esc(holidayTitle(hol)) + '">' +
+      '<svg class="i" aria-hidden="true"><use href="#' + (hclash ? "i-alert" : "i-star") + '"/></svg>' +
+      '<span class="nm">' + esc(hol.short) + "</span></span>");
+  }
+  if (half)    marks.push('<span class="flag f-half"><svg class="i" aria-hidden="true"><use href="#i-half"/></svg>Half-day</span>');
+  if (duty)    marks.push('<span class="flag f-duty"><svg class="i" aria-hidden="true"><use href="#i-duty"/></svg>Duty</span>');
+
+  /* the OR mark rides on the patient it belongs to, not on the whole day */
+  const names = list.slice(0, 3).map(p =>
+    '<li' + (isForOR(p) ? ' class="is-or"' : "") + ">" +
+    (isForOR(p) ? '<i class="or-mark"></i>' : "") +
+    esc(p.name.split(",")[0]) + "</li>").join("");
+  const more  = n > 3 ? '<li class="more">+' + (n - 3) + " more</li>" : "";
+  const roster = n ? '<ul class="roster">' + names + more + "</ul>" : "";
+  const inner = top + marks.join("") + roster;
+
+  if (!n) return '<div class="' + cls.join(" ") + '">' + inner + "</div>";
+
+  const orN = list.filter(isForOR).length;
+  const label = [
+    fmtLong(key), n + (n === 1 ? " patient" : " patients"),
+    orN ? orN + " for OR" : "",
+    clash ? "conflict: scheduled during leave" : (leave ? "on leave" : ""),
+    hol ? (hclash ? "conflict: scheduled on " + hol.name + ", a regular holiday" : holidayTitle(hol)) : "",
+    half ? "half-day" : "", duty ? "duty day" : "", isToday ? "today" : ""
+  ].filter(Boolean).join(", ");
+
+  return '<button type="button" class="' + cls.join(" ") + '" data-date="' + key +
+    '" aria-label="' + esc(label) + '">' + inner + "</button>";
+}
+
+function openDay(date, list, trigger) {
+  $("#dayTitle").textContent = fmtLong(date);
+  const orN = list.filter(isForOR).length;
+  const bits = [list.length + (list.length === 1 ? " patient" : " patients") + " scheduled"];
+  if (orN) bits.push(orN + " for OR");
+  const leave = leaveRangeFor(date), half = halfDayFor(date), hol = holidayFor(date), duty = dutyFor(date);
+  if (hol) bits.push((hol.type === "regular" && !leave ? "\u26A0 " : "") + holidayTitle(hol));
+  if (leave) bits.push("⚠ " + leave.label);
+  if (half) bits.push(half.label);
+  if (duty) bits.push(duty.label);
+  $("#daySub").textContent = bits.join(" · ");
+
+  const box = $("#dayList");
+  box.innerHTML = list.map(p =>
+    '<li><button type="button" class="row" data-idx="' + ALL_PATIENTS.indexOf(p) + '">' +
+      '<span class="nm">' + esc(p.name) + orPill(p) + "</span>" +
+      tagPill(p.tag) +
+      '<svg class="i go" aria-hidden="true"><use href="#i-chev"/></svg>' +
+    "</button></li>").join("");
+  $$("button.row", box).forEach(btn => {
+    btn.addEventListener("click", () =>
+      openDetail(ALL_PATIENTS[+btn.dataset.idx], btn));
+  });
+  renderDayActions(date);
+  openDialog($("#dayScrim"), trigger);
+}
+
+/* ============================================================
+   SORTING
+   ============================================================ */
+function sortRows(rows, div) {
+  const key = state.sortKey[div], dir = state.sortDir[div];
+  return rows.slice().sort((a, b) => {
+    const ra = a[key], rb = b[key];
+    const na = Number(ra), nb = Number(rb);
+    if (ra !== "" && rb !== "" && ra != null && rb != null && !isNaN(na) && !isNaN(nb)) {
+      return (na - nb) * dir;
+    }
+    const va = String(ra == null ? "" : ra).toLowerCase();
+    const vb = String(rb == null ? "" : rb).toLowerCase();
+    return va < vb ? -dir : va > vb ? dir : 0;
+  });
+}
+function buildSortHeaders() {
+  $$("th[data-sort]").forEach(th => {
+    if ($("button", th)) return;
+    const div = th.dataset.div, key = th.dataset.sort;
+    const label = (SORT_LABELS[div] || {})[key] || SORT_LABELS._default[key] || key;
+    th.innerHTML = '<button type="button"><span>' + esc(label) +
+      '</span><svg class="i" aria-hidden="true"><use href="#i-down"/></svg></button>';
+  });
+}
+function syncSortHeaders() {
+  $$("th[data-sort]").forEach(th => {
+    const div = th.dataset.div, key = th.dataset.sort;
+    const active = state.sortKey[div] === key;
+    const asc = state.sortDir[div] === 1;
+    if (active) th.setAttribute("aria-sort", asc ? "ascending" : "descending");
+    else th.removeAttribute("aria-sort");
+    const use = $("use", th);
+    if (use) use.setAttribute("href", active && asc ? "#i-up" : "#i-down");
+  });
+}
+document.addEventListener("click", e => {
+  const th = e.target.closest("th[data-sort]");
+  if (!th) return;
+  const div = th.dataset.div, key = th.dataset.sort;
+  if (state.sortKey[div] === key) state.sortDir[div] *= -1;
+  else { state.sortKey[div] = key; state.sortDir[div] = 1; }
+  renderAll();
+});
+
+/* ============================================================
+   TABLE VIEW
+   ============================================================ */
+function toggleEmpty(id, show) { const el = $("#" + id); if (el) el.hidden = !show; }
+function scrollerOf(el) { return el.closest(".tscroll"); }
+
+function patientRow(p, withDate) {
+  const idx = ALL_PATIENTS.indexOf(p);
+  const overdue = p.date < TODAY;
+  return '<tr data-idx="' + idx + '" tabindex="0">' +
+    (withDate ? dateCell(p.date) : "") +
+    '<td class="cell-name">' + esc(p.name) + orPill(p) + labsPill(p) + problemGlyphs(p) + "</td>" +
+    '<td class="cell-cn num">' + esc(p.cn || "—") + "</td>" +
+    (withDate ? "" : dateCell(p.date, overdue ? ' <span class="pill mild">overdue</span>' : "")) +
+    "<td>" + tagPill(p.tag) + "</td>" +
+    '<td class="snip">' + snip(p.assessment, 96, "no note") + "</td>" +
+    '<td class="snip">' + snip(p.pending_tests, 72) + "</td>" +
+    "</tr>";
+}
+function wireRows(scope) {
+  $$("tr[data-idx]", scope).forEach(tr => {
+    const open = () => openDetail(ALL_PATIENTS[+tr.dataset.idx], tr);
+    tr.addEventListener("click", open);
+    tr.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+    });
+  });
+}
+
+function renderUpcomingGroups(rows) {
+  const box = $("#upcomingGroups");
+  if (!rows.length) { box.innerHTML = ""; toggleEmpty("upcomingEmpty", true); return; }
+  toggleEmpty("upcomingEmpty", false);
+
+  const byMonth = {};
+  rows.forEach(p => { (byMonth[p.date.slice(0, 7)] = byMonth[p.date.slice(0, 7)] || []).push(p); });
+
+  const head = "<tr>" +
+    ["date", "name", "cn", "tag"].map(k => '<th data-sort="' + k + '" data-div="upcoming"></th>').join("") +
+    '<th><span class="th-label">Assessment</span></th>' +
+    '<th><span class="th-label">Pending tests</span></th></tr>';
+
+  box.innerHTML = Object.keys(byMonth).sort().map((mk, i) => {
+    const [yy, mm] = mk.split("-").map(Number);
+    const list = sortRows(byMonth[mk], "upcoming");
+    return '<details class="mgroup"' + (i === 0 ? " open" : "") + ">" +
+      '<summary><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>' +
+      MONTHS[mm - 1] + " " + yy + '<span class="n num">' + list.length + "</span></summary>" +
+      '<div class="tscroll" tabindex="0" role="region" aria-label="' + MONTHS[mm - 1] + " " + yy + ' follow-ups">' +
+      '<table class="data"><thead>' + head + "</thead><tbody>" +
+      list.map(p => patientRow(p, true)).join("") + "</tbody></table></div></details>";
+  }).join("");
+  wireRows(box);
+}
+
+function renderTable() {
+  const all = filteredPatients();
+  const overdue    = all.filter(p => p.date <  TODAY);
+  const upcoming   = all.filter(p => isISO(p.date) && p.date >= TODAY);
+  /* Booked for one more visit, no date yet because it hinges on results, not
+     the calendar — never counted as overdue/NAWC just for lacking a date. */
+  const pendingLabs = all.filter(p => !isISO(p.date) && p.pending_labs);
+  $("#upcomingCount").textContent = "(" + upcoming.length + ")";
+  $("#overdueCount").textContent  = "(" + overdue.length + ")";
+  $("#pendingLabsCount").textContent = "(" + pendingLabs.length + ")";
+
+  renderUpcomingGroups(upcoming);
+
+  const body = $("#overdueBody");
+  body.innerHTML = sortRows(overdue, "overdue").map(p => patientRow(p, false)).join("");
+  toggleEmpty("overdueEmpty", !overdue.length);
+  scrollerOf(body).hidden = !overdue.length;
+  wireRows(body);
+
+  const labsBody = $("#pendingLabsBody");
+  labsBody.innerHTML = sortRows(pendingLabs, "labs").map(p => patientRow(p, false)).join("");
+  toggleEmpty("pendingLabsEmpty", !pendingLabs.length);
+  scrollerOf(labsBody).hidden = !pendingLabs.length;
+  wireRows(labsBody);
+}
+
+function openDetail(p, trigger, opts) {
+  const o = opts || {};
+  const memorial = o.kind === "mortality";
+  $("#detailTitle").textContent = p.name;
+
+  const sub = ["CN " + (p.cn || "—")];
+  if (memorial) {
+    sub.push(p.date ? "Died " + fmtDate(p.date) : "Died — date not recorded");
+    if (p.last_seen) sub.push("last booked " + fmtDate(p.last_seen));
+  } else if (p.date) {
+    const d = daysBetween(TODAY, p.date);
+    sub.push("Follow-up " + fmtDate(p.date) +
+      (d === 0 ? " · today" : d > 0 ? " · in " + d + "d" : " · " + (-d) + "d overdue"));
+  }
+  if (p.tag) sub.push(TAG_LABELS[p.tag] || p.tag);
+  if (!memorial && isForOR(p)) sub.push("FOR OR");
+  $("#detailSub").textContent = sub.filter(Boolean).join(" · ");
+
+  $("#detailAssessmentKey").textContent = memorial ? "Last assessment on file" : "Assessment";
+  $("#detailTestsBlock").hidden = memorial;
+
+  const note = $("#detailNoteBlock");
+  note.hidden = !p.note;
+  if (p.note) $("#detailNote").textContent = p.note;
+
+  /* When Pending OR carries the plan, show it here so the chart and the
+     surgical list never have to be read side by side. */
+  const or = orInfo(p), orBlock = $("#detailOrBlock");
+  orBlock.hidden = memorial || !isForOR(p);
+  if (!orBlock.hidden) {
+    $("#detailOrPlan").textContent = or && or.or_plan
+      ? or.or_plan
+      : "Chart flags this patient for OR. No plan recorded on the Pending OR list.";
+    const st = $("#detailOrStatus");
+    st.textContent = or && or.status ? or.status : "";
+    st.hidden = !(or && or.status);
+  }
+
+  /* Spelled out in full here — the row glyphs are the compact form, this is
+     where you confirm what one of them meant, ambient category included. */
+  const probs = p.problems || [], probBlock = $("#detailProbBlock");
+  probBlock.hidden = !probs.length;
+  if (probs.length) {
+    $("#detailProb").innerHTML = probs.map(k =>
+      '<span class="prob-line"><svg class="i" aria-hidden="true"><use href="#' + PROBLEM_ICONS[k] + '"/></svg>' +
+      esc(PROBLEM_LABELS[k] || k) + "</span>").join("");
+  }
+
+  fillField("#detailAssessment", p.assessment);
+  fillField("#detailTests", p.pending_tests);
+  renderDetailActions(p, o);
+  openDialog($("#detailScrim"), trigger);
+}
+function fillField(sel, text) {
+  const el = $(sel);
+  el.textContent = text || "No Obsidian chart note on file for this patient.";
+  el.classList.toggle("none", !text);
+}
+
+/* ============================================================
+   NAWC
+   ============================================================ */
+/* Overdue patients are split by how long they have been overdue, because that
+   tracks how recoverable they are. Under ~30 days the plan still stands and a
+   chart usually exists; past 90 days almost none of these have an Obsidian
+   chart at all, so they need re-triage rather than a reschedule. The freshest
+   tier is usually not no-shows at all — it is charting that has not been
+   written up yet. */
+const NAWC_TIERS = [
+  { max:   7, label: "Not yet charted",      note: "0–7 days · usually the note just isn't written yet", open: true  },
+  { max:  30, label: "Recallable",           note: "8–30 days · plan still stands",                      open: true  },
+  { max:  90, label: "Cold — needs re-triage", note: "31–90 days · plan is stale, decide recall vs discharge", open: false },
+  { max: Infinity, label: "Lost to follow-up", note: "over 90 days · kept for the record",               open: false }
+];
+
+function nawcRowHtml(p) {
+  const key  = p.cn || p.name;
+  const days = daysBetween(p.date, TODAY);
+  const done = state.reviewed.has(key);
+  return '<tr class="' + (done ? "reviewed" : "") + '">' +
+    '<td class="cell-name">' + esc(p.name) + orPill(p) + problemGlyphs(p) + "</td>" +
+    '<td class="cell-cn num">' + esc(p.cn || "—") + "</td>" +
+    "<td>" + tagPill(p.tag) + "</td>" +
+    dateCell(p.date) +
+    '<td><span class="pill ' + (days > 30 ? "overdue" : "mild") + ' num">' + days + "d</span></td>" +
+    '<td><button class="btn-mark" type="button" data-key="' + esc(key) + '" aria-pressed="' + done + '">' +
+      '<svg class="i" aria-hidden="true"><use href="#i-check"/></svg>' +
+      (done ? "Reviewed" : "Mark reviewed") + "</button></td></tr>";
+}
+
+function renderNawc() {
+  const rows = sortRows(filteredPatients().filter(p => isISO(p.date) && p.date < TODAY), "nawc");
+  const host = $("#nawcTiers");
+  toggleEmpty("nawcEmpty", !rows.length);
+  host.hidden = !rows.length;
+
+  let lo = 0;
+  host.innerHTML = NAWC_TIERS.map(t => {
+    const group = rows.filter(p => {
+      const d = daysBetween(p.date, TODAY);
+      return d >= lo && d <= t.max;
+    });
+    lo = t.max + 1;
+    if (!group.length) return "";
+    return '<details class="nawc-tier"' + (t.open ? " open" : "") + '>' +
+      '<summary class="section-head"><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>' +
+      esc(t.label) + ' <span class="n">' + group.length + "</span>" +
+      '<span class="tier-note">' + esc(t.note) + "</span></summary>" +
+      '<div class="tscroll" tabindex="0" role="region" aria-label="' + esc(t.label) + '">' +
+      '<table class="data"><thead><tr>' +
+      "<th>Patient</th><th>CN</th><th>Type</th><th>Scheduled follow-up</th><th>Overdue by</th><th>Review</th>" +
+      "</tr></thead><tbody>" + group.map(nawcRowHtml).join("") + "</tbody></table></div></details>";
+  }).join("");
+
+  $$(".btn-mark", host).forEach(btn => {
+    btn.addEventListener("click", () => {
+      const k = btn.dataset.key;
+      if (state.reviewed.has(k)) state.reviewed.delete(k); else state.reviewed.add(k);
+      persistReviewed();
+      renderNawc();
+    });
+  });
+}
+
+/* ============================================================
+   DISCHARGED / PENDING OR
+   ============================================================ */
+function renderDischarged() {
+  const rows = sortRows(DISCHARGED_PRN.filter(matchesSearch), "discharged");
+  const body = $("#dischargedBody");
+  toggleEmpty("dischargedEmpty", !rows.length);
+  scrollerOf(body).hidden = !rows.length;
+  body.innerHTML = rows.map((p, i) =>
+    '<tr data-dis="' + i + '" tabindex="0">' +
+    '<td class="cell-name">' + esc(p.name) + problemGlyphs(p) + "</td>" +
+    '<td class="cell-cn num">' + esc(p.cn || "—") + "</td>" +
+    '<td><span class="pill overdue">' + esc(p.reason || "—") + "</span></td>" +
+    '<td class="snip">' + (p.note ? esc(p.note) : '<span class="none">—</span>') + "</td>" +
+    '<td><span class="pill source">' + esc(p.source || "—") + "</span></td></tr>").join("");
+  wireOpen(body, "dis", i => rows[i]);
+}
+/* row -> detail sheet, by click or Enter/Space */
+function wireOpen(body, attr, pick, opts) {
+  $$("tr[data-" + attr + "]", body).forEach(tr => {
+    const open = () => openDetail(pick(+tr.dataset[attr]), tr, opts || {});
+    tr.addEventListener("click", open);
+    tr.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+    });
+  });
+}
+
+/* A "Cleared" status always starts with the word — "Not yet cleared ..."
+   is the only other shape this field takes, so anchoring on ^cleared
+   keeps the split correct without needing a separate boolean field. */
+function isCleared(p) { return !!(p && p.status && /^cleared\b/i.test(p.status.trim())); }
+function clearancePill(p) {
+  return isCleared(p)
+    ? '<span class="pill cleared"><i class="clear-mark"></i>Cleared</span>'
+    : '<span class="pill notcleared"><i class="clear-mark"></i>Not cleared</span>';
+}
+function renderPendingOr() {
+  const rows = sortRows(PENDING_OR.filter(matchesSearch), "pendingor");
+  const body = $("#pendingOrBody");
+  toggleEmpty("pendingOrEmpty", !rows.length);
+  scrollerOf(body).hidden = !rows.length;
+
+  const rowHtml = p => {
+    const date = !p.date
+      ? '<td><span class="pill mild">no date set</span></td>'
+      : p.dateTentative
+        ? '<td class="cell-date" title="' + esc(p.date) + '"><span class="pill tent">~' + fmtDate(p.date) + "</span></td>"
+        : dateCell(p.date);
+    return '<tr data-por="' + PENDING_OR.indexOf(p) + '" tabindex="0">' +
+      '<td class="cell-name">' + esc(p.name) + problemGlyphs(p) + "</td>" +
+      '<td class="cell-cn num">' + esc(p.cn || "—") + "</td>" +
+      '<td class="snip">' + (p.or_plan ? esc(p.or_plan) : '<span class="none">—</span>') + "</td>" +
+      '<td class="snip">' + clearancePill(p) + " " + (p.status ? esc(p.status) : '<span class="none">—</span>') + "</td>" +
+      date +
+      '<td><span class="pill source">' + esc(p.source || "—") + (p.tc ? " · TC" : "") + "</span></td></tr>";
+  };
+  const groupHtml = (label, cls, list) => list.length
+    ? '<tr class="group-row ' + cls + '"><td colspan="6">' + esc(label) + ' <span class="n">' + list.length + "</span></td></tr>" +
+      list.map(rowHtml).join("")
+    : "";
+
+  const notCleared = rows.filter(p => !isCleared(p));
+  const cleared = rows.filter(isCleared);
+  body.innerHTML =
+    groupHtml("Not yet cleared", "is-notcleared", notCleared) +
+    groupHtml("Cleared", "is-cleared", cleared);
+  wireOpen(body, "por", i => PENDING_OR[i]);
+}
+
+/* ============================================================
+   ADMITTED — on the OPD list, in a bed right now
+   ============================================================ */
+function renderAdmitted() {
+  const rows = sortRows(ADMITTED.filter(matchesSearch), "admitted");
+  const body = $("#admittedBody");
+  toggleEmpty("admittedEmpty", !rows.length);
+  scrollerOf(body).hidden = !rows.length;
+  body.innerHTML = rows.map((p, i) =>
+    '<tr data-adm="' + i + '" tabindex="0">' +
+    '<td class="cell-name">' + esc(p.name) + problemGlyphs(p) + "</td>" +
+    '<td class="cell-cn num">' + esc(p.cn || "\u2014") + "</td>" +
+    (p.last_seen ? dateCell(p.last_seen) : '<td><span class="pill mild">no chart yet</span></td>') +
+    (p.date ? dateCell(p.date) : '<td><span class="pill mild">set at discharge</span></td>') +
+    '<td class="snip">' + (p.note ? esc(p.note) : '<span class="none">\u2014</span>') + "</td>" +
+    '<td><span class="pill source">' + esc(p.source || "\u2014") + "</span></td></tr>").join("");
+
+  $$("tr[data-adm]", body).forEach(tr => {
+    const open = () => openDetail(rows[+tr.dataset.adm], tr, {});
+    tr.addEventListener("click", open);
+    tr.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+    });
+  });
+}
+
+/* ============================================================
+   MORTALITY
+   ============================================================ */
+function renderMortality() {
+  const rows = sortRows(MORTALITY.filter(matchesSearch), "mortality");
+  const body = $("#mortalityBody");
+  toggleEmpty("mortalityEmpty", !rows.length);
+  scrollerOf(body).hidden = !rows.length;
+
+  body.innerHTML = rows.map((p, i) =>
+    '<tr data-mort="' + i + '" tabindex="0">' +
+    '<td class="cell-name">' + esc(p.name) + "</td>" +
+    '<td class="cell-cn num">' + esc(p.cn || "—") + "</td>" +
+    (p.date
+      ? dateCell(p.date)
+      : '<td><span class="pill memorial">not recorded</span></td>') +
+    '<td class="snip">' + (p.note ? esc(p.note) : '<span class="none">—</span>') + "</td>" +
+    '<td><span class="pill source">' + esc(p.source || "—") + "</span></td></tr>").join("");
+
+  $$("tr[data-mort]", body).forEach(tr => {
+    const open = () => openDetail(rows[+tr.dataset.mort], tr, { kind: "mortality" });
+    tr.addEventListener("click", open);
+    tr.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+    });
+  });
+}
+
+
+/* ============================================================
+   DATA + SYNC
+   Patient data is never part of this file. It lives in a PRIVATE GitHub repo
+   (calendar.json) that this page reads and writes with a token stored on the
+   device. GitHub Pages sites are public, so the page itself carries code only.
+
+   Every edit is an operation queued on the device first, then replayed onto the
+   latest copy of the file before it is written back. A Mac resync and a phone
+   edit landing at the same time therefore merge instead of overwriting each
+   other — the same reason the calendar arrays never get regenerated wholesale.
+   ============================================================ */
+const DATA_KEYS = ["ALL_PATIENTS", "DISCHARGED_PRN", "MORTALITY", "PENDING_OR", "ADMITTED",
+                   "LEAVE_RANGES", "HOLIDAYS", "HALF_DAYS", "DUTY_DAYS"];
+const PATIENT_LISTS = ["ALL_PATIENTS", "PENDING_OR", "ADMITTED", "DISCHARGED_PRN", "MORTALITY"];
+const LIST_LABELS = {
+  ALL_PATIENTS: "Active — on the calendar", PENDING_OR: "Pending OR only",
+  ADMITTED: "Admitted", DISCHARGED_PRN: "Discharged / PRN", MORTALITY: "Mortality"
+};
+const GH_DEFAULT = { owner: "dudyalola", repo: "opd-calendar-data", path: "calendar.json", branch: "main", token: "" };
+
+let SNAPSHOT = false;          /* the vault copy, data baked in: read-only */
+let SNAPSHOT_DATE = "";
+let remoteSha = store("opd.sha", "");
+let syncedAt  = store("opd.syncedAt", "");
+let syncState = "idle";        /* idle | busy | error | offline */
+let syncError = "";
+let queue     = safeJSON(store("opd.queue", "[]"), []);
+let syncChain = Promise.resolve();
+let lastPull  = 0;
+
+function safeJSON(s, fb) { try { const v = JSON.parse(s); return v == null ? fb : v; } catch (e) { return fb; } }
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function ghConf() { return Object.assign({}, GH_DEFAULT, safeJSON(store("opd.gh", "{}"), {})); }
+function ghSave(c) { put("opd.gh", JSON.stringify(c)); }
+function localISO(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+function getData() {
+  return { ALL_PATIENTS, DISCHARGED_PRN, MORTALITY, PENDING_OR, ADMITTED,
+           LEAVE_RANGES, HOLIDAYS, HALF_DAYS, DUTY_DAYS };
+}
+function setData(d) {
+  const a = k => Array.isArray(d && d[k]) ? d[k] : [];
+  ALL_PATIENTS = a("ALL_PATIENTS"); DISCHARGED_PRN = a("DISCHARGED_PRN"); MORTALITY = a("MORTALITY");
+  PENDING_OR = a("PENDING_OR"); ADMITTED = a("ADMITTED"); LEAVE_RANGES = a("LEAVE_RANGES");
+  HOLIDAYS = a("HOLIDAYS"); HALF_DAYS = a("HALF_DAYS"); DUTY_DAYS = a("DUTY_DAYS");
+}
+
+/* One record per line, so git can merge two edits to different patients.
+   opdcal.py on the Mac writes byte-identical output — keep the two in step. */
+function serialize(d) {
+  const out = ["{", '  "format": "opd-calendar/1",'];
+  DATA_KEYS.forEach((k, i) => {
+    const a = d[k] || [], comma = i < DATA_KEYS.length - 1 ? "," : "";
+    if (!a.length) { out.push('  "' + k + '": []' + comma); return; }
+    out.push('  "' + k + '": [');
+    a.forEach((r, j) => out.push("    " + JSON.stringify(r) + (j < a.length - 1 ? "," : "")));
+    out.push("  ]" + comma);
+  });
+  out.push("}");
+  return out.join("\n") + "\n";
+}
+
+/* The vault copy carries its data as the old `const NAME = [...];` lines inside a
+   non-executing script, so the resync scripts and opdics.py keep reading it as
+   they always have. Parse it the same way they do: by brackets, not by eval. */
+function parseConstBlock(txt) {
+  txt = txt.replace(/\/\*[\s\S]*?\*\//g, "");
+  const d = {};
+  DATA_KEYS.forEach(k => {
+    const head = "const " + k + " = ", i = txt.indexOf(head);
+    if (i < 0) return;
+    let j = i + head.length, depth = 0, inStr = false, bs = false;
+    const start = j;
+    for (; j < txt.length; j++) {
+      const c = txt[j];
+      if (inStr) { if (bs) bs = false; else if (c === "\\") bs = true; else if (c === '"') inStr = false; continue; }
+      if (c === '"') inStr = true;
+      else if (c === "[" || c === "{") depth++;
+      else if (c === "]" || c === "}") { if (--depth === 0) { j++; break; } }
+    }
+    d[k] = JSON.parse(txt.slice(start, j));
+  });
+  const t = txt.match(/const TODAY = "([^"]+)"/);
+  SNAPSHOT_DATE = t ? t[1] : "";
+  return d;
+}
+
+/* ---------- identity ----------
+   CNs collide between unrelated patients and some records have none, so a
+   record is matched on CN *and* name, or on name alone when the CN is null. */
+function keyOf(r) { return { cn: r.cn || null, name: r.name }; }
+function sameKey(r, k) { return k.cn ? (r.cn === k.cn && r.name === k.name) : (!r.cn && r.name === k.name); }
+function listOf(p) { return PATIENT_LISTS.find(L => getData()[L].indexOf(p) > -1) || null; }
+
+/* ---------- operations ---------- */
+/* put: remove the record matching `key` from each list in `from`, then (unless
+   `to` is null) place `rec` in `to` — at the same position when it stays in the
+   same list. Returns false when the record it was aimed at no longer exists. */
+function applyOp(d, op) {
+  if (op.t === "sched") { d[op.field] = clone(op.value); return true; }
+  if (op.t !== "put") return false;
+  let pos = -1, found = !op.key;
+  (op.from || []).forEach(L => {
+    const a = d[L] || (d[L] = []);
+    const i = a.findIndex(r => sameKey(r, op.key));
+    if (i > -1) { found = true; if (L === op.to) pos = i; a.splice(i, 1); }
+  });
+  if (!found) return false;
+  if (op.to) {
+    const a = d[op.to] || (d[op.to] = []);
+    const dup = a.findIndex(r => sameKey(r, keyOf(op.rec)));   /* never two rows for one patient */
+    if (dup > -1) { if (pos < 0) pos = dup; a.splice(dup, 1); }
+    const rec = clone(op.rec);
+    if (pos > -1 && pos <= a.length) a.splice(pos, 0, rec); else a.push(rec);
+  }
+  return true;
+}
+
+function commit(ops, toastMsg) {
+  if (SNAPSHOT) return;
+  ops = [].concat(ops).filter(Boolean);
+  if (!ops.length) return;
+  const d = clone(getData());
+  ops.forEach(op => { op.at = Date.now(); applyOp(d, op); queue.push(op); });
+  put("opd.queue", JSON.stringify(queue));
+  put("opd.data", serialize(d));
+  setData(d);
+  refreshAll();
+  if (toastMsg) toast(toastMsg + (ghConf().token ? "" : " — on this device only until GitHub is connected"));
+  sync();
+}
+
+/* ---------- GitHub contents API ---------- */
+function apiURL(c) {
+  return "https://api.github.com/repos/" + encodeURIComponent(c.owner) + "/" + encodeURIComponent(c.repo) +
+    "/contents/" + c.path.split("/").map(encodeURIComponent).join("/");
+}
+function ghHeaders(c, raw) {
+  return { Authorization: "Bearer " + c.token, Accept: raw ? "application/vnd.github.raw" : "application/vnd.github+json" };
+}
+function b64dec(b) {
+  const bin = atob(b.replace(/\s/g, ""));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+function b64enc(s) {
+  const bytes = new TextEncoder().encode(s);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+async function ghFail(r) {
+  let msg = "";
+  try { msg = (await r.json()).message || ""; } catch (e) {}
+  const plain = {
+    401: "GitHub rejected the token (expired or mistyped)",
+    403: "the token can't access that repo — check its repository access and Contents permission",
+    404: "repo or file not found — check owner, repo and path, and that the token covers the private repo"
+  }[r.status];
+  const e = new Error(plain || ("GitHub " + r.status + (msg ? ": " + msg : "")));
+  e.status = r.status;
+  return e;
+}
+async function ghGet(c) {
+  const url = apiURL(c) + "?ref=" + encodeURIComponent(c.branch);
+  const r = await fetch(url, { headers: ghHeaders(c), cache: "no-store" });
+  if (!r.ok) throw await ghFail(r);
+  const j = await r.json();
+  let text;
+  if (j.content && j.encoding === "base64") text = b64dec(j.content);
+  else {   /* over 1 MB the API omits the body; ask for it raw */
+    const r2 = await fetch(url, { headers: ghHeaders(c, true), cache: "no-store" });
+    if (!r2.ok) throw await ghFail(r2);
+    text = await r2.text();
+  }
+  return { sha: j.sha, data: JSON.parse(text) };
+}
+async function ghPut(c, text, sha, message) {
+  const r = await fetch(apiURL(c), {
+    method: "PUT", headers: Object.assign(ghHeaders(c), { "Content-Type": "application/json" }),
+    body: JSON.stringify({ message, content: b64enc(text), sha, branch: c.branch })
+  });
+  if (!r.ok) throw await ghFail(r);
+  return (await r.json()).content.sha;
+}
+
+function adopt(sha, data, force) {
+  const changed = force || sha !== remoteSha;
+  remoteSha = sha; put("opd.sha", sha);
+  syncedAt = new Date().toISOString(); put("opd.syncedAt", syncedAt);
+  put("opd.data", serialize(data));
+  if (changed) { setData(data); refreshAll(); }
+}
+
+/* Pull the file; if edits are queued, replay them onto it and write it back. */
+async function syncOnce() {
+  const c = ghConf();
+  if (SNAPSHOT || !c.token) { renderSyncLine(); return; }
+  if (!navigator.onLine) { syncState = "offline"; renderSyncLine(); return; }
+  syncState = "busy"; renderSyncLine();
+  try {
+    let { sha, data } = await ghGet(c);
+    let wrote = false;
+    lastPull = Date.now();
+    for (let attempt = 0; queue.length && attempt < 5; attempt++) {
+      const batch = queue.slice(), d = clone(data), skipped = [];
+      batch.forEach(op => { if (!applyOp(d, op)) skipped.push(op); });
+      const msg = "App: " + batch.map(o => o.msg || o.t).join("; ").slice(0, 180);
+      try {
+        sha = await ghPut(c, serialize(d), sha, msg);
+      } catch (e) {
+        if (e.status === 409 || e.status === 422) { ({ sha, data } = await ghGet(c)); continue; }
+        throw e;
+      }
+      queue = queue.slice(batch.length); put("opd.queue", JSON.stringify(queue));
+      data = d; wrote = true;
+      toast(skipped.length
+        ? "Saved. " + skipped.length + " edit" + (skipped.length > 1 ? "s were" : " was") +
+          " skipped — that patient was changed or removed elsewhere first."
+        : "Saved to GitHub", !!skipped.length);
+    }
+    if (queue.length) throw new Error("another device kept saving at the same moment — tap Sync to retry");
+    adopt(sha, data, wrote);
+    syncState = "idle"; syncError = "";
+  } catch (e) {
+    /* a TypeError from fetch is the network, not GitHub: hospital wifi that
+       claims to be online. Treat it as offline and let the retry pick it up. */
+    syncState = (e instanceof TypeError || !navigator.onLine) ? "offline" : "error";
+    syncError = e.message || String(e);
+  }
+  renderSyncLine();
+}
+function sync() { syncChain = syncChain.then(syncOnce, syncOnce); return syncChain; }
+
+/* ---------- boot ---------- */
+function loadInitialData() {
+  const inline = document.getElementById("opd-data");
+  const txt = inline && inline.textContent.trim();
+  if (txt) {
+    SNAPSHOT = true;
+    document.documentElement.classList.add("is-snapshot");
+    setData(parseConstBlock(txt));
+    return;
+  }
+  const cached = safeJSON(store("opd.data", ""), null);
+  if (cached) setData(cached);
+}
+let syncWired = false;
+function startSync() {
+  renderSyncLine();
+  if (SNAPSHOT) return;
+  wireSyncEvents();
+  if (!ghConf().token) { if (!store("opd.data", "")) openSyncSheet(); return; }
+  sync();
+}
+function wireSyncEvents() {
+  if (syncWired) return;
+  syncWired = true;
+  addEventListener("online", () => sync());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    /* left open overnight: the whole page keys off TODAY, so start fresh */
+    if (localISO(new Date()) !== TODAY) { location.reload(); return; }
+    if (ghConf().token && (Date.now() - lastPull > 60000 || queue.length)) sync();
+  });
+}
+function refreshAll() {
+  rebuildIndexes();
+  populateTagFilter();
+  renderDateline();
+  renderAll();
+}
+
+/* ---------- status ---------- */
+function relTime(iso) {
+  if (!iso) return "never";
+  const s = Math.round((Date.now() - new Date(iso)) / 1000);
+  if (s < 45) return "just now";
+  if (s < 3600) return Math.round(s / 60) + " min ago";
+  if (s < 86400) return Math.round(s / 3600) + " h ago";
+  const d = new Date(iso);
+  return MON[d.getMonth()] + " " + d.getDate() + ", " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+function renderSyncLine() {
+  const line = $("#syncLine"), btn = $("#syncBtn");
+  if (!line || !btn) return;
+  const c = ghConf(), n = queue.length, unsaved = n ? " · " + n + " unsaved edit" + (n > 1 ? "s" : "") : "";
+  let text, cls = "", bcls = "", label;
+  if (SNAPSHOT) {
+    text = "Offline snapshot" + (SNAPSHOT_DATE ? " built " + fmtDate(SNAPSHOT_DATE) : "") + " — edit in the app";
+    bcls = "s-ok"; label = "Snapshot";
+  } else if (!c.token) {
+    text = (ALL_PATIENTS.length ? "Not connected to GitHub — showing this device's copy" : "Not connected to GitHub") + unsaved;
+    cls = n ? "is-pending" : ""; bcls = n ? "s-pending" : ""; label = "Connect";
+  } else if (syncState === "busy") {
+    text = "Syncing…" + unsaved; bcls = "s-busy"; label = "Syncing";
+  } else if (syncState === "error") {
+    text = "Sync failed — " + syncError + unsaved; cls = "is-error"; bcls = "s-error"; label = "Sync";
+  } else if (syncState === "offline") {
+    text = "Offline — showing data from " + relTime(syncedAt) +
+      (n ? " · " + n + " edit" + (n > 1 ? "s" : "") + " will save when back online" : ""); cls = n ? "is-pending" : ""; bcls = n ? "s-pending" : ""; label = "Offline";
+  } else {
+    text = "Synced " + relTime(syncedAt) + unsaved; cls = n ? "is-pending" : ""; bcls = n ? "s-pending" : "s-ok"; label = "Synced";
+  }
+  line.textContent = text;
+  line.className = cls;
+  btn.className = "tbtn " + bcls;
+  $(".lbl", btn).textContent = label;
+  btn.setAttribute("aria-label", "Sync: " + text);
+  btn.title = text;
+  const st = $("#syncStatus");
+  if (st) { st.textContent = text; st.className = "hint " + (cls === "is-error" ? "bad" : cls === "is-pending" ? "warn" : ""); }
+  const dq = $("#syncDiscard");
+  if (dq) dq.hidden = !n;
+}
+/* refresh the "synced n min ago" text, and retry queued edits while offline */
+setInterval(() => {
+  if (queue.length && syncState !== "busy" && ghConf().token && !SNAPSHOT) sync();
+  else if (syncState === "idle") renderSyncLine();
+}, 60000);
+
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.toggle("is-error", !!isErr);
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), isErr ? 6000 : 2600);
+}
+
+/* ============================================================
+   EDITING — detail-sheet actions, the patient form, the schedule
+   ============================================================ */
+function iconBtn(id, icon, label, cls) {
+  return '<button type="button" class="tbtn ' + (cls || "") + '" id="' + id + '">' +
+    '<svg class="i" aria-hidden="true"><use href="#' + icon + '"/></svg><span class="lbl">' + esc(label) + "</span></button>";
+}
+
+function renderDetailActions(p, o) {
+  const foot = $("#detailActions");
+  if (SNAPSHOT) { foot.innerHTML = ""; return; }
+  const L = listOf(p);
+  if (!L) { foot.innerHTML = ""; return; }
+  foot.innerHTML =
+    iconBtn("dEdit", "i-edit", "Edit", "is-primary") +
+    (L === "ALL_PATIENTS" ? iconBtn("dResched", "i-cal", "Reschedule") : "") +
+    '<span class="spacer"></span>' +
+    '<label class="sr-only" for="dMove">Move patient to</label>' +
+    '<select class="in" id="dMove" style="width:auto;min-height:32px">' +
+      '<option value="">Move to…</option>' +
+      PATIENT_LISTS.filter(x => x !== L).map(x => '<option value="' + x + '">' + esc(LIST_LABELS[x]) + "</option>").join("") +
+    "</select>";
+  $("#dEdit").addEventListener("click", e => openEditor(p, L, e.currentTarget));
+  const rs = $("#dResched");
+  if (rs) rs.addEventListener("click", e => openEditor(p, L, e.currentTarget, { focus: "date" }));
+  $("#dMove").addEventListener("change", e => {
+    const to = e.target.value;
+    e.target.value = "";
+    if (to) openEditor(p, L, e.target, { moveTo: to });
+  });
+}
+
+function renderDayActions(date) {
+  const foot = $("#dayActions");
+  if (SNAPSHOT) { foot.innerHTML = ""; return; }
+  foot.innerHTML = iconBtn("dayAdd", "i-plus", "Add patient on this day");
+  $("#dayAdd").addEventListener("click", e => openEditor(null, "ALL_PATIENTS", e.currentTarget, { date }));
+}
+
+/* ---------- date helpers ---------- */
+function addDays(iso, n) { const d = parseISO(iso); d.setDate(d.getDate() + n); return localISO(d); }
+function addMonths(iso, n) {
+  const d = parseISO(iso), day = d.getDate();
+  d.setDate(1); d.setMonth(d.getMonth() + n);
+  d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+  return localISO(d);
+}
+/* OPD runs Tue PM and Thu AM — quick picks land on the first clinic day on or after */
+function nextClinic(iso) {
+  for (let i = 0; i < 7; i++) { const d = addDays(iso, i), w = parseISO(d).getDay(); if (w === 2 || w === 4) return d; }
+  return iso;
+}
+function dateWarnings(iso, ignoreP) {
+  if (!isISO(iso)) return [];
+  const w = [], dow = parseISO(iso).getDay();
+  if (dow !== 2 && dow !== 4) w.push(DOW_LONG[dow] + " is not a clinic day (Tue PM / Thu AM)");
+  const lv = leaveRangeFor(iso); if (lv) w.push("during leave — " + lv.label);
+  const h = holidayFor(iso);
+  if (h) w.push(h.type === "regular" ? h.name + " — regular holiday, clinic closed" : h.name + " — special non-working day");
+  const n = ALL_PATIENTS.filter(x => x.date === iso && x !== ignoreP).length;
+  if (n) w.push(n + " already booked that day");
+  if (iso < TODAY) w.push("this date is in the past — the patient will show on NAWC");
+  return w;
+}
+
+/* ---------- patient form ---------- */
+const TAG_CHOICES = ["CONT", "CO-MGMT", "CONT / ADM", "OBS"];
+const DATE_LABEL = {
+  ALL_PATIENTS: "Follow-up date", PENDING_OR: "Follow-up", ADMITTED: "Booked follow-up",
+  DISCHARGED_PRN: "Last follow-up", MORTALITY: "Date of death"
+};
+let edit = null;   /* { p, from, trigger } */
+
+function openEditor(p, from, trigger, opts) {
+  const o = opts || {};
+  const r = p ? clone(p) : { name: "", cn: null, date: o.date || null, assessment: "", pending_tests: "", tag: "CONT", postop: false, problems: [] };
+  const to = o.moveTo || from;
+  const or = p && from === "ALL_PATIENTS" ? orInfo(p) : null;
+  edit = { p, from, trigger, origDate: r.date };
+
+  $("#editTitle").textContent = p ? (o.moveTo ? "Move " + p.name.split(",")[0] : "Edit " + p.name.split(",")[0]) : "Add patient";
+  $("#editSub").textContent = p ? "CN " + (p.cn || "—") + " · now in " + LIST_LABELS[from] : "New record on the OPD list";
+
+  const probs = new Set(r.problems || []);
+  const f = $("#editForm");
+  f.innerHTML =
+    '<label class="fl full"><span>List</span><select class="in" name="list">' +
+      PATIENT_LISTS.map(L => '<option value="' + L + '"' + (L === to ? " selected" : "") + ">" + esc(LIST_LABELS[L]) + "</option>").join("") +
+    "</select></label>" +
+    '<p class="hint full" id="moveHint" hidden></p>' +
+    '<label class="fl full"><span>Name — SURNAME, First</span><input class="in" name="name" required autocomplete="off" autocapitalize="characters" spellcheck="false" value="' + esc(r.name) + '"></label>' +
+    '<label class="fl"><span>CN</span><input class="in num" name="cn" inputmode="numeric" autocomplete="off" value="' + esc(r.cn || "") + '"></label>' +
+    '<label class="fl" data-for="ALL_PATIENTS DISCHARGED_PRN MORTALITY"><span>Type</span><select class="in" name="tag">' +
+      ['<option value="">—</option>'].concat(Array.from(new Set(TAG_CHOICES.concat(r.tag ? [r.tag] : [])))
+        .map(t => '<option value="' + esc(t) + '"' + (t === r.tag ? " selected" : "") + ">" + esc(TAG_LABELS[t] || t) + "</option>")).join("") +
+    "</select></label>" +
+    '<p class="hint bad full" id="cnHint" hidden></p>' +
+    '<div class="fl full"><label class="fl"><span id="dateLabel">Follow-up date</span>' +
+      '<input class="in num" type="date" name="date" value="' + esc(isISO(r.date) ? r.date : "") + '"></label>' +
+      '<div class="quick" id="quickDates" data-for="ALL_PATIENTS PENDING_OR ADMITTED">' +
+        [["Next Tue", "tue"], ["Next Thu", "thu"], ["2 wk", "w2"], ["1 mo", "m1"], ["2 mo", "m2"], ["3 mo", "m3"], ["6 mo", "m6"], ["Clear", "clear"]]
+          .map(([t, k]) => '<button type="button" data-q="' + k + '">' + t + "</button>").join("") +
+      "</div>" +
+      '<p class="hint warn" id="dateHint" hidden></p>' +
+    "</div>" +
+    '<label class="chk full" data-for="ALL_PATIENTS"><input type="checkbox" name="pending_labs"' + (r.pending_labs ? " checked" : "") +
+      '> Follow up once with labs — no date yet</label>' +
+    '<label class="chk full" data-for="PENDING_OR"><input type="checkbox" name="dateTentative"' + (r.dateTentative ? " checked" : "") +
+      "> Date is a placeholder (~date)</label>" +
+    '<label class="fl" data-for="ADMITTED MORTALITY"><span>Last charted / last booked</span><input class="in num" type="date" name="last_seen" value="' + esc(isISO(r.last_seen) ? r.last_seen : "") + '"></label>' +
+    '<label class="fl" data-for="DISCHARGED_PRN"><span>Reason</span><input class="in" name="reason" list="reasonList" value="' + esc(r.reason || "") + '"></label>' +
+    '<datalist id="reasonList"><option value="DISCHARGED"><option value="PRN"></datalist>' +
+    '<label class="fl full" data-for="ADMITTED DISCHARGED_PRN MORTALITY"><span>Note</span><input class="in" name="note" value="' + esc(r.note || "") + '"></label>' +
+    '<fieldset class="fset full" data-for="ALL_PATIENTS PENDING_OR"><legend>Surgery</legend>' +
+      '<label class="chk" data-for="ALL_PATIENTS"><input type="checkbox" name="forOR"' + ((r.postop || or) ? " checked" : "") + "> For OR</label>" +
+      '<div class="form" id="orFields">' +
+        '<label class="fl full"><span>OR plan</span><input class="in" name="or_plan" value="' + esc((or || r).or_plan || "") + '"></label>' +
+        '<label class="fl full"><span>Clearance status</span><input class="in" name="status" list="statusList" value="' + esc((or || r).status || "") + '"></label>' +
+        '<datalist id="statusList"><option value="Cleared for OR"><option value="Not yet cleared"></datalist>' +
+      "</div>" +
+    "</fieldset>" +
+    '<div class="fl full"><span class="eyebrow-ish" style="font-family:var(--f-struct);font-weight:600;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">Problems</span><div class="chips">' +
+      PROBLEM_ORDER.map(k => '<label><input type="checkbox" name="prob" value="' + k + '"' + (probs.has(k) ? " checked" : "") + '>' +
+        '<svg class="i" aria-hidden="true"><use href="#' + PROBLEM_ICONS[k] + '"/></svg>' + esc(PROBLEM_LABELS[k]) + "</label>").join("") +
+    "</div></div>" +
+    '<label class="fl full" data-for="ALL_PATIENTS ADMITTED DISCHARGED_PRN MORTALITY"><span>Assessment</span><textarea class="in" name="assessment" rows="4">' + esc(r.assessment || "") + "</textarea></label>" +
+    '<label class="fl full" data-for="ALL_PATIENTS ADMITTED DISCHARGED_PRN"><span>Pending tests</span><textarea class="in" name="pending_tests" rows="2">' + esc(r.pending_tests || "") + "</textarea></label>";
+
+  $("#editActions").innerHTML =
+    iconBtn("eSave", "i-check", p ? "Save" : "Add patient", "is-primary") +
+    iconBtn("eCancel", "i-x", "Cancel") +
+    '<span class="spacer"></span>' +
+    (p ? iconBtn("eDelete", "i-trash", "Delete record", "is-danger") : "");
+
+  const listSel = f.elements.list;
+  listSel.addEventListener("change", () => syncEditorFields(true));
+  f.elements.date.addEventListener("input", syncDateHint);
+  f.elements.cn.addEventListener("input", syncCnHint);
+  f.elements.forOR && f.elements.forOR.addEventListener("change", syncEditorFields);
+  $$("#quickDates button", f).forEach(b => b.addEventListener("click", () => {
+    const base = TODAY, k = b.dataset.q;
+    const v = k === "clear" ? "" :
+      k === "tue" || k === "thu" ? (() => { const want = k === "tue" ? 2 : 4; for (let i = 1; i <= 7; i++) { const d = addDays(base, i); if (parseISO(d).getDay() === want) return d; } })() :
+      k === "w2" ? nextClinic(addDays(base, 14)) : nextClinic(addMonths(base, +k.slice(1)));
+    f.elements.date.value = v;
+    if (v && f.elements.pending_labs) f.elements.pending_labs.checked = false;
+    syncDateHint();
+  }));
+  $("#eSave").addEventListener("click", saveEditor);
+  $("#eCancel").addEventListener("click", () => closeDialog($("#editScrim")));
+  if (p) $("#eDelete").addEventListener("click", deleteEditor);
+  f.onsubmit = e => { e.preventDefault(); saveEditor(); };
+
+  syncEditorFields(!!o.moveTo);
+  syncCnHint();
+  openDialog($("#editScrim"), trigger);
+  const focusEl = o.focus === "date" ? f.elements.date : (p ? null : f.elements.name);
+  if (focusEl) setTimeout(() => focusEl.focus(), 30);
+}
+
+function syncEditorFields(listChanged) {
+  const f = $("#editForm"), to = f.elements.list.value;
+  $$("[data-for]", f).forEach(el => { el.hidden = el.dataset.for.split(" ").indexOf(to) < 0; });
+  $("#dateLabel").textContent = DATE_LABEL[to];
+  const forOR = f.elements.forOR;
+  $("#orFields").hidden = to === "ALL_PATIENTS" && !(forOR && forOR.checked);
+  const from = edit.from;
+  if (listChanged === true && edit.p) {
+    /* the date slot changes meaning between lists — don't carry a follow-up
+       date across as a date of death, or a death date back as a follow-up */
+    if (to === "MORTALITY" && from !== "MORTALITY") {
+      f.elements.date.value = "";
+      if (!f.elements.last_seen.value && isISO(edit.origDate)) f.elements.last_seen.value = edit.origDate;
+      if (!f.elements.note.value) f.elements.note.value = "Patient expired";
+    } else if (to === "ADMITTED" && from !== "ADMITTED") {
+      f.elements.date.value = "";
+      if (!f.elements.last_seen.value) f.elements.last_seen.value = TODAY;
+    } else {
+      f.elements.date.value = isISO(edit.origDate) && from !== "MORTALITY" ? edit.origDate : f.elements.date.value;
+    }
+    if (to === "DISCHARGED_PRN" && !f.elements.reason.value) f.elements.reason.value = "DISCHARGED";
+  }
+  const hint = $("#moveHint");
+  const msgs = {
+    MORTALITY: "Moving to Mortality removes this patient from every other list, Pending OR included.",
+    ADMITTED: "Held off the calendar and NAWC while admitted. Booked follow-up stays blank until discharge unless one is already set.",
+    DISCHARGED_PRN: "Taken off the calendar — no fixed follow-up.",
+    PENDING_OR: "Tracked on Pending OR only, never on the Calendar tab."
+  };
+  hint.hidden = !(edit.p && to !== from && msgs[to]);
+  hint.textContent = msgs[to] || "";
+  syncDateHint();
+}
+function syncDateHint() {
+  const f = $("#editForm"), to = f.elements.list.value, v = f.elements.date.value;
+  const h = $("#dateHint");
+  let w = to === "ALL_PATIENTS" ? dateWarnings(v, edit.p) : [];
+  if (to === "ALL_PATIENTS" && !v && !(f.elements.pending_labs && f.elements.pending_labs.checked))
+    w = ["no date and not pending labs — this patient won't appear on the Calendar or NAWC"];
+  h.hidden = !w.length;
+  h.textContent = w.length ? "⚠ " + w.join(" · ") : "";
+}
+function syncCnHint() {
+  const f = $("#editForm"), cn = f.elements.cn.value.trim(), h = $("#cnHint");
+  const hits = [];
+  if (cn) PATIENT_LISTS.forEach(L => getData()[L].forEach(r => {
+    if (r.cn === cn && r !== edit.p && !(L === "PENDING_OR" && edit.p && r.name === edit.p.name))
+      hits.push(r.name + " (" + LIST_LABELS[L] + ")");
+  }));
+  h.hidden = !hits.length;
+  h.textContent = hits.length ? "CN " + cn + " is already on file for " + hits.join(", ") + ". CNs do collide — check it's not the same patient." : "";
+  h.className = "hint full " + (hits.length ? "warn" : "");
+}
+
+function saveEditor() {
+  const f = $("#editForm"), E = f.elements, { p, from } = edit;
+  const to = E.list.value;
+  const name = E.name.value.replace(/\s+/g, " ").trim();
+  if (!name) { E.name.focus(); toast("A name is required", true); return; }
+  const val = el => (el && el.value.trim()) || "";
+  const dateOrNull = el => (el && isISO(el.value) ? el.value : null);
+
+  const rec = p ? clone(p) : {};
+  rec.name = name;
+  rec.cn = val(E.cn) || null;
+  rec.date = dateOrNull(E.date);
+  rec.problems = PROBLEM_ORDER.filter(k => $$('input[name="prob"]:checked', f).some(i => i.value === k));
+  if (to !== "PENDING_OR") {
+    rec.assessment = val(E.assessment) || (rec.assessment == null ? null : "");
+    if (to !== "MORTALITY") rec.pending_tests = val(E.pending_tests) || null;
+  }
+  if (["ALL_PATIENTS", "DISCHARGED_PRN", "MORTALITY"].indexOf(to) > -1) rec.tag = val(E.tag) || null;
+  if (to === "ALL_PATIENTS") {
+    rec.postop = !!E.forOR.checked;
+    if (E.pending_labs.checked && !rec.date) rec.pending_labs = true; else delete rec.pending_labs;
+    if (!("tag" in rec)) rec.tag = "CONT";
+  }
+  if (to === "ADMITTED" || to === "MORTALITY") rec.last_seen = dateOrNull(E.last_seen);
+  if (to === "ADMITTED" || to === "DISCHARGED_PRN" || to === "MORTALITY") rec.note = val(E.note) || null;
+  if (to === "DISCHARGED_PRN") rec.reason = val(E.reason) || null;
+  if (to === "PENDING_OR") {
+    rec.or_plan = val(E.or_plan); rec.status = val(E.status);
+    rec.dateTentative = !!E.dateTentative.checked;
+  }
+  if (["ADMITTED", "MORTALITY", "PENDING_OR", "DISCHARGED_PRN"].indexOf(to) > -1 && !rec.source) rec.source = "App";
+
+  const short = name.split(",")[0];
+  const ops = [];
+  const orRow = p && from === "ALL_PATIENTS" ? orInfo(p) : null;
+  /* Pending OR rows are matched by CN and can spell the name differently
+     (an age/sex suffix on one, say), so a key match alone would leave them behind */
+  if (orRow && !sameKey(orRow, keyOf(p)) && (to === "MORTALITY" || to === "PENDING_OR"))
+    ops.push({ t: "put", key: keyOf(orRow), from: ["PENDING_OR"], to: null, msg: "Off Pending OR " + short });
+  const verb = !p ? "Added" : to !== from ? "Moved to " + LIST_LABELS[to].split(" —")[0] : "Updated";
+  ops.push({
+    t: "put", key: p ? keyOf(p) : null,
+    from: !p ? [] : to === "MORTALITY" ? PATIENT_LISTS : [from],
+    to, rec, msg: verb + " " + short + (rec.date && to === "ALL_PATIENTS" ? " (" + rec.date + ")" : "")
+  });
+
+  /* the Pending OR row that rides along with an active patient */
+  if (to === "ALL_PATIENTS") {
+    if (E.forOR.checked && (val(E.or_plan) || val(E.status) || orRow)) {
+      const base = orRow ? clone(orRow) : { source: "App" };
+      Object.assign(base, { name: rec.name, cn: rec.cn, or_plan: val(E.or_plan), status: val(E.status) || "Not yet cleared",
+                            date: rec.date, problems: rec.problems });
+      ops.push({ t: "put", key: orRow ? keyOf(orRow) : null, from: orRow ? ["PENDING_OR"] : [], to: "PENDING_OR", rec: base,
+                 msg: "OR plan " + short });
+    } else if (!E.forOR.checked && orRow) {
+      ops.push({ t: "put", key: keyOf(orRow), from: ["PENDING_OR"], to: null, msg: "Off Pending OR " + short });
+    }
+  }
+
+  closeDialog($("#editScrim"));
+  if ($("#detailScrim").classList.contains("open")) closeDialog($("#detailScrim"));
+  if ($("#dayScrim").classList.contains("open")) closeDialog($("#dayScrim"));
+  commit(ops, verb + " " + short);
+}
+
+function deleteEditor() {
+  const { p, from } = edit;
+  if (!confirm("Delete " + p.name + " from " + LIST_LABELS[from] + "?\n\nThis removes the record outright. To keep it on file, move it to Discharged / PRN or Mortality instead.")) return;
+  closeDialog($("#editScrim"));
+  if ($("#detailScrim").classList.contains("open")) closeDialog($("#detailScrim"));
+  commit({ t: "put", key: keyOf(p), from: [from], to: null, msg: "Deleted " + p.name.split(",")[0] }, "Deleted " + p.name.split(",")[0]);
+}
+
+/* ---------- schedule: leave, half-days, duty, holidays ---------- */
+const SCHED = {
+  LEAVE_RANGES: { title: "Leave", icon: "i-plane",
+    when: r => fmtDate(r.start) + (r.end !== r.start ? " – " + fmtDate(r.end) : ""), end: r => r.end, what: r => r.label,
+    fields: [["start", "date", "From"], ["end", "date", "To"], ["label", "text", "Label", "Dr. Loyola on leave"]] },
+  HALF_DAYS: { title: "Half-days", icon: "i-half", when: r => fmtDate(r.date), end: r => r.date, what: r => r.label,
+    fields: [["date", "date", "Date"], ["label", "text", "Label", "Half-day"]] },
+  DUTY_DAYS: { title: "Duty days", icon: "i-duty", when: r => fmtDate(r.date), end: r => r.date, what: r => r.label,
+    fields: [["date", "date", "Date"], ["label", "text", "Label", "Duty day"]] },
+  HOLIDAYS: { title: "Holidays", icon: "i-star", when: r => fmtDate(r.date), end: r => r.date,
+    what: r => r.name + " · " + (r.type === "regular" ? "regular" : "special") + (r.tent ? " · expected" : ""),
+    fields: [["date", "date", "Date"], ["name", "text", "Name"], ["short", "text", "Short label (fits a day cell)"],
+             ["type", "select", "Type", ["regular", "special"]], ["tent", "check", "Expected — proclamation not out yet"]] }
+};
+let schedShowPast = {};
+
+function openSchedSheet(trigger) { renderSched(); openDialog($("#schedScrim"), trigger); }
+function renderSched() {
+  const box = $("#schedBody"), D = getData();
+  box.innerHTML = Object.keys(SCHED).map(k => {
+    const S = SCHED[k];
+    const rows = D[k].map((r, i) => ({ r, i })).sort((a, b) => String(a.r.date || a.r.start).localeCompare(String(b.r.date || b.r.start)));
+    const past = rows.filter(x => S.end(x.r) < TODAY), keep = schedShowPast[k] ? rows : rows.filter(x => S.end(x.r) >= TODAY);
+    return '<section class="sched-sec"><h4><svg class="i" aria-hidden="true"><use href="#' + S.icon + '"/></svg>' + S.title +
+      ' <span class="n">' + rows.length + "</span></h4>" +
+      (past.length ? '<button type="button" class="sched-more" data-past="' + k + '">' + (schedShowPast[k] ? "Hide" : "Show") + " " + past.length + " past</button>" : "") +
+      '<ul class="sched-list">' + (keep.length ? keep.map(({ r, i }) =>
+        '<li class="' + (S.end(r) < TODAY ? "is-past" : "") + '"><span class="d">' + S.when(r) + '</span><span class="t">' + esc(S.what(r)) +
+        '</span><button type="button" class="x edit-only" data-del="' + k + ":" + i + '" aria-label="Remove ' + esc(S.what(r)) + '"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></li>'
+      ).join("") : '<li class="is-past"><span class="t">None upcoming</span></li>') + "</ul>" +
+      '<form class="sched-add edit-only" data-add="' + k + '">' + S.fields.map(([n, type, label, extra]) =>
+        type === "select" ? '<label class="sr-only" for="sa-' + k + n + '">' + label + '</label><select class="in" id="sa-' + k + n + '" name="' + n + '">' + extra.map(o => "<option>" + o + "</option>").join("") + "</select>" :
+        type === "check" ? '<label class="chk"><input type="checkbox" name="' + n + '"> ' + label + "</label>" :
+        '<label class="sr-only" for="sa-' + k + n + '">' + label + '</label><input class="in' + (type === "date" ? " num" : "") + '" id="sa-' + k + n + '" type="' + type + '" name="' + n + '" placeholder="' + label + '"' + (extra ? ' value="' + esc(extra) + '"' : "") + (type === "date" ? " required" : "") + ">"
+      ).join("") + iconBtn("sa-btn-" + k, "i-plus", "Add") + "</form></section>";
+  }).join("");
+
+  $$("[data-past]", box).forEach(b => b.addEventListener("click", () => { schedShowPast[b.dataset.past] ^= 1; renderSched(); }));
+  $$("[data-del]", box).forEach(b => b.addEventListener("click", () => {
+    const [k, i] = b.dataset.del.split(":");
+    const next = clone(getData()[k]); const gone = next.splice(+i, 1)[0];
+    commit({ t: "sched", field: k, value: next, msg: "Removed " + SCHED[k].title.toLowerCase() + " " + (gone.date || gone.start) }, "Removed");
+    renderSched();
+  }));
+  $$("form[data-add]", box).forEach(form => {
+    const k = form.dataset.add;
+    $("button", form).type = "submit";
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const S = SCHED[k];
+      let r = {};
+      S.fields.forEach(([n, type]) => {
+        const el = form.elements[n];
+        if (type === "check") { if (el.checked) r[n] = true; }
+        else r[n] = el.value.trim();
+      });
+      if (k === "LEAVE_RANGES") {
+        if (!r.end) r.end = r.start;
+        if (r.end < r.start) { toast("Leave ends before it starts", true); return; }
+      }
+      if (k === "HOLIDAYS") {
+        if (!r.name) { toast("Holiday needs a name", true); return; }
+        if (!r.short) r.short = r.name.slice(0, 12);
+        r = { date: r.date, type: r.type, short: r.short, name: r.name, ...(r.tent ? { tent: true } : {}) };
+      }
+      const next = clone(getData()[k]).filter(x => !(k !== "LEAVE_RANGES" && x.date === r.date));
+      next.push(r);
+      next.sort((a, b) => String(a.date || a.start).localeCompare(String(b.date || b.start)));
+      commit({ t: "sched", field: k, value: next, msg: "Added " + S.title.toLowerCase() + " " + (r.date || r.start) }, "Added");
+      renderSched();
+    });
+  });
+}
+
+/* ---------- GitHub connection sheet ---------- */
+function openSyncSheet(trigger) {
+  const c = ghConf(), f = $("#syncForm");
+  f.elements.owner.value = c.owner; f.elements.repo.value = c.repo;
+  f.elements.path.value = c.path; f.elements.branch.value = c.branch;
+  f.elements.token.value = c.token ? "••••••••" : "";
+  f.elements.token.dataset.has = c.token ? "1" : "";
+  $("#syncForget").hidden = !c.token;
+  renderSyncLine();
+  openDialog($("#syncScrim"), trigger);
+}
+function wireSyncSheet() {
+  const f = $("#syncForm");
+  f.elements.token.addEventListener("focus", e => { if (e.target.dataset.has) e.target.select(); });
+  f.addEventListener("submit", e => {
+    e.preventDefault();
+    const c = ghConf();
+    ["owner", "repo", "path", "branch"].forEach(k => { c[k] = f.elements[k].value.trim() || GH_DEFAULT[k]; });
+    const t = f.elements.token.value.trim();
+    if (t && t !== "••••••••") c.token = t;
+    const repoChanged = c.owner + c.repo + c.path + c.branch !== [ghConf()].map(o => o.owner + o.repo + o.path + o.branch)[0];
+    if (repoChanged) { remoteSha = ""; put("opd.sha", ""); }
+    ghSave(c);
+    f.elements.token.value = c.token ? "••••••••" : "";
+    f.elements.token.dataset.has = c.token ? "1" : "";
+    $("#syncForget").hidden = !c.token;
+    if (!c.token) { toast("Paste a token first", true); return; }
+    sync().then(() => {
+      if (syncState === "idle") { toast("Connected — " + ALL_PATIENTS.length + " active patients"); closeDialog($("#syncScrim")); }
+    });
+  });
+  $("#syncNow").addEventListener("click", () => sync());
+  $("#syncForget").addEventListener("click", () => {
+    if (!confirm("Disconnect this device?\n\nForgets the token and wipes the patient data cached on this device. Nothing on GitHub is touched." +
+      (queue.length ? "\n\n" + queue.length + " unsaved edit(s) will be lost." : ""))) return;
+    ["opd.gh", "opd.data", "opd.sha", "opd.queue", "opd.syncedAt"].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+    location.reload();
+  });
+  $("#syncDiscard").addEventListener("click", () => {
+    if (!confirm("Discard " + queue.length + " unsaved edit(s) and reload the copy on GitHub?")) return;
+    queue = []; put("opd.queue", "[]"); remoteSha = ""; put("opd.sha", "");
+    sync();
+  });
+}
+
+function wireAppChrome() {
+  $("#addBtn").addEventListener("click", e => openEditor(null, "ALL_PATIENTS", e.currentTarget));
+  $("#schedBtn").addEventListener("click", e => openSchedSheet(e.currentTarget));
+  $("#syncBtn").addEventListener("click", e => { if (!SNAPSHOT) openSyncSheet(e.currentTarget); });
+  wireSyncSheet();
+}
+
+/* ============================================================
+   CONTROLS + BOOT
+   ============================================================ */
+const searchInput = $("#search"), searchField = $("#searchField");
+let searchTimer;
+searchInput.addEventListener("input", e => {
+  searchField.classList.toggle("has-value", !!e.target.value);
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { state.search = e.target.value.trim(); renderAll(); }, 120);
+});
+$("#searchClear").addEventListener("click", () => {
+  searchInput.value = "";
+  searchField.classList.remove("has-value");
+  state.search = "";
+  renderAll();
+  searchInput.focus();
+});
+$("#tagFilter").addEventListener("change", e => { state.tag = e.target.value; renderAll(); });
+$("#probFilter").addEventListener("change", e => { state.prob = e.target.value; renderAll(); });
+
+/* ---------- phone layout support ---------- */
+/* Below 640px every data table restacks into cards, and a cell with no column
+   header beside it is unreadable. Rather than teach six renderers about it,
+   stamp the header text onto each cell after the fact — one pass, and any
+   future column comes along for free. */
+function stampCellLabels() {
+  $$("table.data").forEach(tbl => {
+    const heads = $$("thead th", tbl).map(th => (th.textContent || "").trim());
+    if (!heads.length) return;
+    $$("tbody tr", tbl).forEach(tr => {
+      if (tr.classList.contains("group-row")) return;
+      $$("td", tr).forEach((td, i) => {
+        const label = heads[i] || "";
+        if (label) td.setAttribute("data-label", label);
+        const txt = (td.textContent || "").trim();
+        td.classList.toggle("is-blank", txt === "" || txt === "\u2014");
+      });
+    });
+  });
+}
+
+/* The 7-tab rail scrolls ~800px inside ~310px on a phone, so a restored tab
+   can sit entirely off-screen with nothing looking selected. */
+function revealTab(tab) {
+  if (!tab || !tablist.scrollWidth) return;
+  const t = tab.getBoundingClientRect(), r = tablist.getBoundingClientRect();
+  if (t.left < r.left || t.right > r.right) {
+    /* offsetLeft is measured against the sticky control bar, not the rail —
+       scrollIntoView sidesteps the arithmetic and clamps at both ends */
+    tab.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }
+}
+function syncRailMask() {
+  const atEnd = tablist.scrollLeft + tablist.clientWidth >= tablist.scrollWidth - 2;
+  tablist.classList.toggle("at-end", atEnd);
+}
+tablist.addEventListener("scroll", syncRailMask, { passive: true });
+addEventListener("resize", syncRailMask);
+
+/* Filters collapse behind one button on a phone; the dot is the only sign a
+   filter is still on once the drawer is shut. */
+const filterBank = $("#filterBank"), filtersToggle = $("#filtersToggle");
+filtersToggle.addEventListener("click", () => {
+  const open = filterBank.classList.toggle("is-open");
+  filtersToggle.setAttribute("aria-expanded", String(open));
+  if (open) $("#search").focus({ preventScroll: true });
+});
+function syncFiltersDot() {
+  const on = !!(state.search || state.tag || state.prob);
+  $("#filtersDot").hidden = !on;
+  filtersToggle.setAttribute("aria-label", "Filters" + (on ? " (active)" : ""));
+}
+
+function renderAll() {
+  renderStats();
+  renderResultNote();
+  renderCalendar();
+  renderTable();
+  renderNawc();
+  renderDischarged();
+  renderPendingOr();
+  renderAdmitted();
+  renderMortality();
+  buildSortHeaders();
+  syncSortHeaders();
+  stampCellLabels();
+  syncFiltersDot();
+}
+
+loadInitialData();
+rebuildIndexes();
+wireAppChrome();
+renderDateline();
+$("#reviewPersistence").textContent = STORAGE_OK
+  ? "is saved in this browser, so it survives a reload."
+  : "is kept for this session only — your browser blocks local storage for files opened from disk, so it resets on reload.";
+populateTagFilter();
+renderAll();
+
+const savedTab = $("#" + store("opd.tab", "tab-calendar"));
+if (savedTab && savedTab.getAttribute("role") === "tab") selectTab(savedTab);
+syncRailMask();
+startSync();
+</script>
+<!--SW--><script>
+/* Offline cache for the page itself (never the GitHub API — patient data is
+   cached by the app in this device's storage, not by the worker). */
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  var hadController = !!navigator.serviceWorker.controller, reloaded = false;
+  addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").then(function (reg) { reg.update(); }).catch(function () {});
+  });
+  /* a new version took over: reload once so it lands on this launch */
+  navigator.serviceWorker.addEventListener("controllerchange", function () {
+    if (!hadController || reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
+}
+</script><!--/SW-->
+</body>
+</html>
