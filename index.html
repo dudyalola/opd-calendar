@@ -1821,7 +1821,9 @@ function dayCell(key, d, list, maxCount) {
       '<span class="nm">' + esc(hol.short) + "</span></span>");
   }
   if (half)    marks.push('<span class="flag f-half"><svg class="i" aria-hidden="true"><use href="#i-half"/></svg>Half-day</span>');
-  if (duty)    marks.push('<span class="flag f-duty"><svg class="i" aria-hidden="true"><use href="#i-duty"/></svg>Duty</span>');
+  /* name the duty when it has one (WAPOD vs APOD); plain roster days stay "Duty" */
+  if (duty)    marks.push('<span class="flag f-duty" title="' + esc(duty.label) + '"><svg class="i" aria-hidden="true"><use href="#i-duty"/></svg>' +
+    '<span class="nm">' + esc(duty.label && duty.label !== "Duty day" ? duty.label : "Duty") + "</span></span>");
 
   /* the OR mark rides on the patient it belongs to, not on the whole day */
   const names = list.slice(0, 3).map(p =>
@@ -1840,7 +1842,7 @@ function dayCell(key, d, list, maxCount) {
     orN ? orN + " for OR" : "",
     clash ? "conflict: scheduled during leave" : (leave ? "on leave" : ""),
     hol ? (hclash ? "conflict: scheduled on " + hol.name + ", a regular holiday" : holidayTitle(hol)) : "",
-    half ? "half-day" : "", duty ? "duty day" : "", isToday ? "today" : ""
+    half ? "half-day" : "", duty ? (duty.label && duty.label !== "Duty day" ? duty.label + " duty" : "duty day") : "", isToday ? "today" : ""
   ].filter(Boolean).join(", ");
 
   return '<button type="button" class="' + cls.join(" ") + '" data-date="' + key +

@@ -3,7 +3,7 @@
    app keeps its own copy of the data in this device's storage instead.
    The page is network-first, so a new version reaches an installed app on the
    next launch that has signal. Bump CACHE whenever the asset list changes. */
-const CACHE = "opdcal-v1";
+const CACHE = "opdcal-v2";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png",
                 "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
